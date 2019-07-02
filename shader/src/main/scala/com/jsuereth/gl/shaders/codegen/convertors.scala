@@ -1,0 +1,297 @@
+/*
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.jsuereth.gl.shaders
+package codegen
+
+import com.jsuereth.gl.math._
+
+
+// Symbols for casts between scala number types that we can ignore in GLSL.
+val autoCasts = Set("scala.Float$.float2double","scala.Int$.int2double")
+
+// Arithmetic types we will do operator conversions for.  I.e. we take scala method calls that are operator-like and turn them into GLSL operators.
+val arithmeticTypes = Set(
+    "scala.Float",
+    "scala.Int",
+    "scala.Double",
+    "com.jsuereth.gl.math.Vec2", 
+    "com.jsuereth.gl.math.Vec3",
+    "com.jsuereth.gl.math.Vec4",
+    "com.jsuereth.gl.math.Matrix4x4",
+    "com.jsuereth.gl.math.Matrix3x3")
+// TODO - not all of these cross correctly...
+val arithmeticOps = Set("+", "-", "*", "/", ">", "<")
+val operatorTransforms: Map[String, String] =
+    (for {
+        tpe <- arithmeticTypes
+        op <- arithmeticOps
+    } yield s"$tpe.$op" -> op).toMap
+
+// Constructors used to create GLSL types.
+val typeApplyMethods = Map[String, String](
+    "com.jsuereth.gl.math.Vec4$.apply" -> "vec4",
+    "com.jsuereth.gl.math.Vec3$.apply" -> "vec3",
+    "com.jsuereth.gl.math.Vec2$.apply" -> "vec2",
+    "com.jsuereth.gl.math.Matrix4x4$.apply" -> "mat4",
+    "com.jsuereth.gl.math.Matrix3x3$.apply" -> "mat3"
+)
+
+// Operations on java.lang.Math that are built-in on GLSL.
+val javaMathOperations = Set("max", "min", "pow")
+
+trait StmtConvertorEnv {
+    def recordUniform(name: String, tpe: String): Unit
+    def recordOutput(name: String, tpe: String, location: Int): Unit
+    def recordInput(name: String, tpe: String, location: Int): Unit
+}
+trait ShaderConvertorEnv extends StmtConvertorEnv {
+    def addStatement(stmt: Statement): Unit
+    def ast: Ast
+}
+trait VertexShaderConvertorEnv extends ShaderConvertorEnv {
+    def fragmentEnv: ShaderConvertorEnv
+}
+
+class DefaultShaderConvertEnv extends ShaderConvertorEnv {
+    private var stmts = collection.mutable.ArrayBuffer[codegen.Statement]()
+    private var globals = collection.mutable.ArrayBuffer[codegen.Declaration]()
+    private var names = Set[String] ()
+    override def addStatement(stmt: codegen.Statement): Unit = stmts.append(stmt)
+    // TODO - record location
+    override def recordInput(name: String, tpe: String, location: Int): Unit = 
+        if (!names(name)) {
+            globals.append(codegen.Declaration.Input(name, tpe, Some(location)))
+            names += name
+        }
+    override def recordUniform(name: String, tpe: String): Unit = 
+        if (!names(name)) {
+            globals.append(codegen.Declaration.Uniform(name, tpe))
+            names += name
+        }
+    override def recordOutput(name: String, tpe: String, location: Int): Unit =
+        if (!names(name)) {
+          globals.append(codegen.Declaration.Output(name, tpe, Some(location)))
+          names += name
+        }
+    override def ast: codegen.Ast = {
+        codegen.Ast(globals :+ codegen.Declaration.Method("main", "void", stmts))
+    }
+}
+
+/** Utilities for translating Scala into GLSL. */
+class Convertors[R <: tasty.Reflection](val r: R) {
+    import r._
+
+    def toGlslTypeFromTree(tpe: r.TypeTree): String = toGlslType(tpe.tpe)
+    def toGlslType(tpe: r.Type): String = {
+        import r._
+        // TODO - more principled version of this...
+        if (tpe <:< typeOf[Vec2[Float]]) "vec2"
+        else if (tpe <:< typeOf[Vec3[Float]]) "vec3"
+        else if(tpe <:< typeOf[Vec4[Float]]) "vec4"
+        else if(tpe <:< typeOf[Matrix4x4[Float]]) "mat4"
+        else if(tpe <:< typeOf[Matrix3x3[Float]]) "mat3"
+        else if(tpe <:< typeOf[Float]) "float"
+        else if(tpe <:< typeOf[Boolean]) "bool"
+        else if(tpe <:< typeOf[Int]) "int"
+        else if(tpe <:< typeOf[Double]) "double"
+        else if(tpe <:< typeOf[Unit]) "void"
+        // TODO - a real compiler errors, not a runtime exception.
+        else throw new RuntimeException(s"Unknown GLSL type: ${tpe}")
+    }
+
+
+    /** Extractor for detecting a "fragmentShader {}" block. */
+    object FragmentShader {
+        def unapply(tree: r.Statement): Option[r.Statement] = tree match {
+            case Inlined(Some(Apply(mth, args)), statements, expansion) if mth.symbol.fullName == "com.jsuereth.gl.shaders.DslShaderProgram.fragmentShader" => Some(expansion)
+            case _ => None
+        }
+    }
+    /** Extractor for val x = Input(...) */
+    object Input {
+        /** Returns:  name, type, location */
+        def unapply(tree: r.Statement): Option[(String, String, Int)] = tree match {
+            // defined in object
+            case ValDef(sym, tpe, Some(Apply(TypeApply(Ident("Input"), _), List(NamedArg("location", Literal(Constant.Int(location))))))) =>
+              Some(sym, toGlslTypeFromTree(tpe), location)
+            // TODO -defined in class  
+            //case ValDef(sym, tpe, Some(_)) =>
+            //  Some(sym, toGlslTypeFromTree(tpe), 0)
+            case _ => None
+        }
+    }
+    /** Extractor for:  Output("name", position, value) */
+    object Output {
+        /** Returns:  name, value  (todo - tpe + location) */
+        def unapply(tree: r.Statement): Option[(String, String, r.Statement)] = tree match {
+            case Apply(TypeApply(Ident("Output"), _), List(Literal(Constant.String(name)), position, value)) => Some(name, toGlslType(value.tpe), value)
+            case _ => None
+        }
+    }
+    /** Extractor for:  <uniform>() */
+    object Uniform {
+        /** Returns:  name, type. */
+        def unapply(tree: r.Statement): Option[(String, String)] = tree match {
+            case Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List()) if a.tpe <:< typeOf[Uniform[_]]  => 
+              Some(ref.toString, toGlslType(tpe.tpe))
+            case _ => None
+        }
+    }
+    /** Extractor for: gl_Position =. */
+    object GlPosition {
+        // TODO - limit glPosition to calling against the appropriate type/symbol...
+        def unapply(tree: r.Statement): Option[r.Statement] = tree match {
+            // Called by Object
+            case Apply(TypeApply(Ident("glPosition"), _), List(value)) => Some(value)
+            // called within Class
+            case Apply(TypeApply(Select(_, "glPosition"), _), List(value)) => Some(value)
+            case _ => None
+        }
+    }
+    /** Detect if scala is converting between int->float->double, etc. where GLSL automatically does this. */
+    object SafeAutoCast {
+        def unapply(tree: r.Statement): Option[r.Statement] = tree match {
+          case Apply(mthd, List(arg)) if autoCasts(mthd.symbol.fullName) => Some(arg)
+          case _ => None
+        }
+    }
+    /** Detect a GLSL operator encoded in Scala. */
+    object Operator {
+        /** Returns: operator, lhs, rhs. */
+        def unapply(tree: r.Statement): Option[(String, r.Statement, r.Statement)] = tree match {
+            // Handle operators that have implicit params...  [foo.op(bar)(implicits)]
+            case Apply(Apply(mthd @ Select(lhs, _), List(rhs)), _) if operatorTransforms.contains(mthd.symbol.fullName) => 
+              Some((operatorTransforms(mthd.symbol.fullName), lhs, rhs))
+            // Handle operators without implicit params....
+            case Apply(mthd @ Select(lhs, _), List(rhs)) if operatorTransforms.contains(mthd.symbol.fullName) => 
+              Some((operatorTransforms(mthd.symbol.fullName), lhs, rhs))
+            case _ => None
+        }
+    }
+    /** Detect a GLSL constructor in Scala. */
+    object Constructor {
+        /** Returns: type, args */
+        def unapply(tree: r.Statement): Option[(String, List[r.Statement])] = tree match {
+            case Apply(term @ Apply(_, args), _) if typeApplyMethods.contains(term.symbol.fullName) =>
+              Some((typeApplyMethods(term.symbol.fullName), args))
+            case _ => None
+        }
+    }
+    /** Detect GLSL built-in functions. */
+    object BuiltinFunction {
+        /** Returns: operation, args */
+        def unapply(tree: r.Statement): Option[(String, List[r.Statement])] = tree match {
+            // Handle java.lang.Math methods (todo - figure a better way to handle all built-in methods)
+            case Apply(Select(ref, mthd), List(lhs,rhs)) if ref.symbol.fullName == "java.lang.Math" && javaMathOperations(mthd) =>
+              Some((mthd, List(lhs, rhs)))
+            // TODO - lookup for all normalize methods...
+            case Apply(term @ Select(ref, "normalize"), List(_,_)) if term.symbol.fullName == "com.jsuereth.gl.math.Vec3.normalize" => 
+              Some(("normalize", List(ref)))
+            // Handle dot products on vectors
+            // TODO - check the symbol of the method.
+            case Apply(Apply(mthd @ Select(lhs, "dot"), List(rhs)), _) => 
+              Some(("dot", List(lhs,rhs)))
+            case _ => None
+        }
+    }
+
+    def constantToString(c: r.Constant): String = {
+        import r._
+        c match {
+            case Constant.Int(n) => n.toString
+            case Constant.String(n) => '"' + n.toString + '"'
+            case Constant.Long(n) => n.toString
+            case Constant.Boolean(n) => n.toString
+            case Constant.Float(n) => n.toString
+            case Constant.Double(n) => n.toString
+            case Constant.Unit() => ""
+            case Constant.Null() => "null"
+        }
+    }
+
+    def convertExpr(tree: r.Statement) given (env: StmtConvertorEnv): Expr = tree match {
+        case Uniform(name, tpe) => 
+          env.recordUniform(name, tpe)
+          Expr.Id(name)
+        case SafeAutoCast(arg) => convertExpr(arg)
+        case Operator(name, lhs, rhs) => Expr.Operator(name, convertExpr(lhs), convertExpr(rhs))
+        case Constructor(name, args) => Expr.MethodCall(name, args.map(convertExpr))
+        case BuiltinFunction(name, args) => Expr.MethodCall(name, args.map(convertExpr))
+        case Ident(localRef) => Expr.Id(localRef)
+        case If(cond, lhs, rhs) => Expr.Terenary(convertExpr(cond), convertExpr(lhs), convertExpr(rhs))
+        // Erased methods...
+        case Select(expr, "toFloat") => convertExpr(expr)
+        case SafeAutoCast(arg) => convertExpr(arg)
+        case Select(term, mthd) => Expr.Select(convertExpr(term), mthd)
+        // TODO - actual encode literals in AST?
+        case Literal(constant) => Expr.Id(constantToString(constant))
+        // TODO - error message for everything else.
+        case _ => throw new RuntimeException(s"Unable to convert tree: $tree")
+    }
+    def convertStmt(tree: r.Statement) given (env: StmtConvertorEnv): codegen.Statement = tree match {
+        // assign
+        case Output(name, tpe, exp) =>
+          env.recordOutput(name, tpe, 0) // TODO - location
+          codegen.Statement.Assign(name, convertExpr(exp))
+        case Input(name, tpe, location) => 
+          env.recordInput(name, tpe, location)
+          codegen.Statement.Effect(Expr.Id("")) // TODO - don't make fake statements....
+        case GlPosition(value) => Statement.Assign("gl_Position", convertExpr(value))
+        // local variable
+        case ValDef(sym, tpe, optExpr) => codegen.Statement.LocalVariable(sym.toString, toGlslTypeFromTree(tpe), optExpr.map(convertExpr))
+        //case VarDef(sym, tpe, optExpr) => Statement.LocalVariable(sym.toString, toGlslTypeFromTree(tpe), optExpr.map(convertExpr))
+        // effect
+        case _ => codegen.Statement.Effect(convertExpr(tree))
+    }
+    // TODO - handle helper methods and extract them separately as definitions.
+    def walkFragmentShader(tree: r.Statement) given (env: ShaderConvertorEnv): Unit = tree match {
+      case Inlined(None, stmts, exp) => walkFragmentShader(exp)
+      case Block(statements, last) => 
+        for(s <- (statements :+ last)) {
+          walkFragmentShader(s)
+        }
+      // Ignore when we type a block as "Unit"
+      case Typed(block, tpe) if tpe.tpe <:< typeOf[Unit] => walkFragmentShader(block)
+      case other => env.addStatement(convertStmt(other))
+    }
+
+    // TODO - share some of the "walk" code with walkFragmentShader.
+    def walkVertexShader(tree: r.Statement) given (env: VertexShaderConvertorEnv): Unit = tree match {
+      // Ignore when we type a block as "Unit"
+      case Typed(block, tpe) if tpe.tpe <:< typeOf[Unit] => walkVertexShader(block)
+      case FragmentShader(exp) => 
+        // TODO - make a new environment, then unify the shaders. after walking.
+        walkFragmentShader(exp) given env.fragmentEnv
+      case Inlined(None, stmts, exp) => walkVertexShader(exp)
+      case Block(statements, last) => 
+        for(s <- (statements :+ last)) {
+          walkVertexShader(s)
+        }
+      
+      case stmt => env.addStatement(convertStmt(stmt))  
+    }
+
+    // TODO - we need to return separate ASTs for vertex/fragment shaders.
+    def convert(tree: r.Statement): (codegen.Ast, codegen.Ast) = {
+        object env extends DefaultShaderConvertEnv with VertexShaderConvertorEnv {
+            override val fragmentEnv = new DefaultShaderConvertEnv()
+        }
+        walkVertexShader(tree) given env
+        TransformAst(env.ast, env.fragmentEnv.ast)
+    }
+}
