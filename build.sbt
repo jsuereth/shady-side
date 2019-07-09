@@ -29,28 +29,23 @@ def commonSettings: Seq[Setting[_]] = Seq(
       case DepModuleInfo(group, id, version) if group contains "org.lwjgl" => "Lightweight Java Game Library"
       case DepModuleInfo(group, id, version) if id contains "junit" => "Used for testing"
       case DepModuleInfo(group, id, version) if id contains "jsr305" => "Required to compile, transitive dep."
-    }
-
+    },
+    libraryDependencies += junit
 )
 
 // Our linear algebra library.  Should NOT depend on OpenGL in any way.
 // TODO - sbt-jmh showing off how bad we are at fast math.
-val math = project.settings(commonSettings:_*).settings(
-    libraryDependencies += junit
-)
-
+val math = project.settings(commonSettings:_*)
 // Our library for passing data into/out of OpenGL.
 // This is meant to abstract over Plain-old-data classes and make it seamless
 // to shove mat4's, vec3's, VAOs and Samplers (texture buffers) around.
 val io = project.dependsOn(math).settings(commonSettings:_*).settings(
-    libraryDependencies += junit,
     libraryDependencies += lwjgl("lwjgl"),
     libraryDependencies += lwjgl("lwjgl-opengl")
 )
 
 // The shader DSL.
 val shader = project.dependsOn(math, io).settings(commonSettings:_*).settings(
-    libraryDependencies += junit,
     libraryDependencies += lwjgl("lwjgl"),
     libraryDependencies += lwjgl("lwjgl-opengl")
 )

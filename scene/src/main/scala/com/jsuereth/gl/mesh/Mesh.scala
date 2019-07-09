@@ -67,23 +67,27 @@ trait Mesh3d {
           val normal = 
             if(faceIdx.normal == 0) Vec3(0.0f,0.0f,0.0f)
             else normals(faceIdx.normal - 1)
-          val texture = textureCoords(faceIdx.texture - 1)
+          val texture = 
+            if (faceIdx.texture == 0) Vec2(0f,0f)
+            else textureCoords(faceIdx.texture - 1)
           MeshPoint(vertex,normal,texture)
         }
+    }
+    // TODO - don't keep indicies in such a wierd format...
+    private def idxes: Seq[Int] = {
+      val indexMap = allIndicies.zipWithIndex.toMap
+      for {
+        face <- faces
+        v <- face.vertices
+        idx <- indexMap get v
+      } yield idx
     }
 
     // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
     /** Loads this mesh into a VAO that can be rendered. */
     def loadVao given MemoryStack: VertexArrayObject[MeshPoint] = {
-      // TODO - don't keep indicies in such a wierd format...
-      val indexMap = allIndicies.zipWithIndex.toMap
-      val indexSeq: Seq[Int] = for {
-        face <- faces
-        v <- face.vertices
-        idx <- indexMap get v
-      } yield idx
       // TODO - Figure out if triangles or quads.
-      VertexArrayObject.loadWithIndex(points, indexSeq)
+      VertexArrayObject.loadWithIndex(points, idxes)
     }
 }
 

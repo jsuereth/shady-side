@@ -124,7 +124,6 @@ class ObjMeshParser() {
   }
 
   private def generateNormals(faces: Seq[TriangleFace]): Seq[TriangleFace] = {
-    System.err.println("Synthesizing normals for this mesh.")
     for (v <- vertices) normals += Vec3(0f,0f,0f)
     for (TriangleFace(one,two,three) <- faces) {
       val A = vertices(one.vertix-1)
