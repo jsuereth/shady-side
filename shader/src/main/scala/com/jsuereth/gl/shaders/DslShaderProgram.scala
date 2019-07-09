@@ -45,6 +45,13 @@ object DslShaderProgram {
       }
     }
     inline def valName: String = ${valNameImpl}
+
+    def testStructDefImpl[T] given (r: tasty.Reflection, tpe: Type[T]): Expr[String] = {
+      import r._
+      val helpers = codegen.Convertors[r.type](r)
+      helpers.toStructDefinition(tpe.unseal.tpe).map(_.toProgramString).toString
+    }
+    inline def testStructDef[T] = ${testStructDefImpl[T]}
 }
 abstract class DslShaderProgram extends BasicShaderProgram {
 

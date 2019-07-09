@@ -123,7 +123,6 @@ object ShaderUniformLoadable {
 
   // Now opaque types, i.e. textures + buffers.
   import com.jsuereth.gl.texture._
-
   delegate for ShaderUniformLoadable[Texture2D] {
     def loadUniform(location: Int, value: Texture2D) given ShaderLoadingEnvironment: Unit = {
       // TODO - figure out how to free acquired textures in a nice way
@@ -135,6 +134,47 @@ object ShaderUniformLoadable {
       // Bind the texture
       // Tell OpenGL which id we used.
       loadTextureUniform(location, id)
+    }
+  }
+  import deriving._
+  inline def uniformSize[T]: Int = 
+    inline compiletime.erasedValue[T] match {
+      case _: (head *: tail) => uniformSize[head] + uniformSize[tail]
+      case _: Unit => 0
+      case _ => delegate match {
+        case m: Mirror.ProductOf[T] => uniformSize[m.MirroredElemTypes]
+        case primitive: ShaderUniformLoadable[T] => 1
+        case _ => compiletime.error("Type is not a valid uniform value!")
+      }
+    }
+
+  /** Derives uniform loading for struct-like case classes.   These MUST have statically known sized. */
+  inline def derived[T] given (m: Mirror.ProductOf[T]): ShaderUniformLoadable[T] =
+    new ShaderUniformLoadable[T] {
+      def loadUniform(location: Int, value: T) given ShaderLoadingEnvironment: Unit =
+        loadStructAtIdx[m.MirroredElemTypes](location, 0, value.asInstanceOf[Product])
+    }
+
+  /** Inline helper to load a value into a location, performing the implicit lookup INLINE. */
+  inline def loadOne[T](location: Int, value: T) given ShaderLoadingEnvironment: Unit =
+     delegate match {
+        case loader: ShaderUniformLoadable[T] =>
+          loader.loadUniform(location, value)
+        case _ =>
+          compiletime.error("Could not find a uniform serializer for all types!")
+     }
+
+  /** Peels off a level of case-class property and writes it to a uniform, before continuing to call itself on the next uniform. */
+  inline def loadStructAtIdx[RemainingElems](location: Int, idx: Int, value: Product) given ShaderLoadingEnvironment: Unit = {
+    inline compiletime.erasedValue[RemainingElems] match {
+      case _: Unit => () // Base case, no elements left.
+      case _: Tuple1[head] => loadOne[head](location, value.productElement(idx).asInstanceOf)
+      case _: (head *: tail) =>
+        // Peel off and load this element.
+        loadOne[head](location, value.productElement(idx).asInstanceOf)
+        // Chain the rest of the elements, allowing for nested structures.
+        val nextLoc = location + uniformSize[head]
+        loadStructAtIdx[tail](nextLoc, idx+1, value)
     }
   }
 }

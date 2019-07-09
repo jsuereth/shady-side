@@ -40,6 +40,7 @@ inline def sizeOf[T]: Int = inline erasedValue[T] match {
     case _: Vec4[t] => 4*sizeOf[t] 
     case _: Matrix4x4[t] => 16*sizeOf[t]
     case _: Matrix3x3[t] => 9*sizeOf[t]
+    // TODO - SizedArray opaque type...
     case _: (a *: b) => sizeOf[a]+sizeOf[b]
     case _: Product => implicit match {
         case m: Mirror.ProductOf[T] => sizeOf[m.MirroredElemTypes]
@@ -145,7 +146,7 @@ inline def vaoAttributes[T]: Array[VaoAttribute] = {
                                   attr[c](2, stride, sizeOf[a]+sizeOf[b]),
                                   attr[d](3, stride, sizeOf[a]+sizeOf[b]+sizeOf[c]))
     case _: Product =>
-      implicit match {
+      delegate match {
         case m: Mirror.ProductOf[T] => vaoAttributes[m.MirroredElemTypes]
       }
     case _ => compiletime.error("Cannot compute the VAO attributes of this type.")

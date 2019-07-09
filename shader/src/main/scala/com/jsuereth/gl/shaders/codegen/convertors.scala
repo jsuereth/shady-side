@@ -60,6 +60,7 @@ trait StmtConvertorEnv {
     def recordUniform(name: String, tpe: String): Unit
     def recordOutput(name: String, tpe: String, location: Int): Unit
     def recordInput(name: String, tpe: String, location: Int): Unit
+    def recordStruct(struct: codegen.Declaration.Struct): Unit
 }
 trait ShaderConvertorEnv extends StmtConvertorEnv {
     def addStatement(stmt: Statement): Unit
@@ -72,7 +73,8 @@ trait VertexShaderConvertorEnv extends ShaderConvertorEnv {
 class DefaultShaderConvertEnv extends ShaderConvertorEnv {
     private var stmts = collection.mutable.ArrayBuffer[codegen.Statement]()
     private var globals = collection.mutable.ArrayBuffer[codegen.Declaration]()
-    private var names = Set[String] ()
+    private var names = Set[String]()
+    private var types = Set[String]()
     override def addStatement(stmt: codegen.Statement): Unit = stmts.append(stmt)
     // TODO - record location
     override def recordInput(name: String, tpe: String, location: Int): Unit = 
@@ -85,6 +87,12 @@ class DefaultShaderConvertEnv extends ShaderConvertorEnv {
             globals.append(codegen.Declaration.Uniform(name, tpe))
             names += name
         }
+    override def recordStruct(struct: codegen.Declaration.Struct): Unit = {
+      if (!types(struct.name)) {
+        globals.prepend(struct)
+        types += struct.name
+      }
+    }
     override def recordOutput(name: String, tpe: String, location: Int): Unit =
         if (!names(name)) {
           globals.append(codegen.Declaration.Output(name, tpe, Some(location)))
@@ -103,9 +111,13 @@ class Convertors[R <: tasty.Reflection](val r: R) {
     def toGlslType(tpe: r.Type): String = {
         import r._
         // TODO - more principled version of this...
+        // TODO - test to ensure this lines up with sizeof, vaoattribute, uniform loader, etc.
         if (tpe <:< typeOf[Vec2[Float]]) "vec2"
+        else if (tpe <:< typeOf[Vec2[Int]]) "ivec2"
         else if (tpe <:< typeOf[Vec3[Float]]) "vec3"
+        else if (tpe <:< typeOf[Vec3[Int]]) "ivec3"
         else if(tpe <:< typeOf[Vec4[Float]]) "vec4"
+        else if(tpe <:< typeOf[Vec4[Int]]) "ivec4"
         else if(tpe <:< typeOf[Matrix4x4[Float]]) "mat4"
         else if(tpe <:< typeOf[Matrix3x3[Float]]) "mat3"
         else if(tpe <:< typeOf[Float]) "float"
@@ -116,6 +128,24 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         else if(tpe <:< typeOf[Texture2D]) "sampler2D"
         // TODO - a real compiler errors, not a runtime exception.
         else throw new RuntimeException(s"Unknown GLSL type: ${tpe}")
+    }
+
+    // TODO - can we make type->glsl type a straight inline method we use in macros?
+    def toStructMemberDef(sym: r.ValDefSymbol): StructMember = 
+      StructMember(sym.name, toGlslType(sym.tree.tpt.tpe))
+
+    /** Converts a given type into a GLSL struct definition. */
+    def toStructDefinition(tpe: r.Type): Option[Declaration.Struct] = 
+      tpe.classSymbol map { clsSym =>
+        new Declaration.Struct(clsSym.name, clsSym.caseFields.map(toStructMemberDef).toSeq)
+      }
+    /** Checks whether a given type is an GLSL "opaque" type. */  
+    def isOpaqueType(tpe: r.Type): Boolean = tpe <:< typeOf[Texture2D]  
+    /** Returns true if a given type is a "structure-like" type for the purposes of GLSL. */
+    def isStructType(tpe: r.Type): Boolean = tpe.classSymbol match {
+      // TODO - more robust definition.  E.g. check if ALL fields have a GLSL type.
+      case Some(clsSym) => !clsSym.caseFields.isEmpty && !isOpaqueType(tpe)
+      case None => false
     }
 
 
@@ -152,7 +182,22 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         /** Returns:  name, type. */
         def unapply(tree: r.Statement): Option[(String, String)] = tree match {
             case Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List()) if a.tpe <:< typeOf[Uniform[_]]  => 
-              Some(ref.toString, toGlslType(tpe.tpe))
+              // TODO - handle uniform-style structs.
+              if (isStructType(tpe.tpe)) None
+              else Some(ref.toString, toGlslType(tpe.tpe))
+            case _ => None
+        }
+    }
+    /** Extractor for:  <uniform>(), where we are accessing a struct type. */
+    object UniformStruct {
+        /** Returns:  name, type and structure definition. */
+        def unapply(tree: r.Statement): Option[(String, Declaration.Struct)] = tree match {
+            case Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List()) if a.tpe <:< typeOf[Uniform[_]] && isStructType(tpe.tpe)  => 
+              // TODO - handle uniform-style structs.
+              toStructDefinition(tpe.tpe) match {
+                case Some(struct) => Some(ref.toString, struct)
+                case None => None
+              }
             case _ => None
         }
     }
@@ -237,6 +282,10 @@ class Convertors[R <: tasty.Reflection](val r: R) {
     def convertExpr(tree: r.Statement) given (env: StmtConvertorEnv): Expr = tree match {
         case Uniform(name, tpe) => 
           env.recordUniform(name, tpe)
+          Expr.Id(name)
+        case UniformStruct(name, st) =>
+          env.recordStruct(st)
+          env.recordUniform(name, st.name)
           Expr.Id(name)
         case SafeAutoCast(arg) => convertExpr(arg)
         case Operator(name, lhs, rhs) => Expr.Operator(name, convertExpr(lhs), convertExpr(rhs))

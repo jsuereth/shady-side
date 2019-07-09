@@ -3,6 +3,7 @@ import org.junit.Assert._
 
 import com.jsuereth.gl.shaders._
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.io._
 
 /** This is our target syntax. */
 // Attempt at cel-shading
@@ -47,9 +48,9 @@ object ExampleCartoonShader extends DslShaderProgram {
   }
 }
 
+
 class Test1 {
-  @Test def extractShaderProgramString(): Unit = {
-    val shader = ExampleCartoonShader
+  @Test def extractCartoonVertexShader(): Unit = {
     assertEquals(
 """#version 300 es
 
@@ -67,9 +68,9 @@ void main() {
   worldPos = ((modelMatrix * vec4(inPosition,1.0))).xyz;
   worldNormal = ((modelMatrix * vec4(inNormal,0.0))).xyz;
   gl_Position = (((projectionMatrix * viewMatrix) * modelMatrix) * vec4(inPosition,1.0));
-}""", shader.vertexShaderCode)
-    
-    
+}""", ExampleCartoonShader.vertexShaderCode)
+  }
+  @Test def extractCartoonFragmentShader(): Unit = {
     assertEquals(
 """#version 300 es
 
@@ -93,9 +94,9 @@ void main() {
   float edgeDetection = ((dot(V,worldNormal) > 0.3)) ? (1.0) : (0.0);
   float light = (edgeDetection * (diffuse + specular));
   color = vec4(light,light,light,1.0);
-}""", shader.fragmentShaderCode)
+}""", ExampleCartoonShader.fragmentShaderCode)
 
-    assertEquals("modelMatrix", shader.modelMatrix.name)
-    assertEquals("lightPosition", shader.lightPosition.name)
+    assertEquals("modelMatrix", ExampleCartoonShader.modelMatrix.name)
+    assertEquals("lightPosition", ExampleCartoonShader.lightPosition.name)
   }
 }
