@@ -20,7 +20,10 @@ import org.lwjgl.opengl.{
     GL11,
     GL20
 }
-import com.jsuereth.gl.io.ShaderUniformLoadable
+import com.jsuereth.gl.io.{
+  ShaderUniformLoadable,
+  ShaderLoadingEnvironment
+}
 import org.lwjgl.system.MemoryStack
 
 enum Shader(val id: Int) {
@@ -108,7 +111,7 @@ abstract class BasicShaderProgram {
    protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
      var location: Int = 0
      // TODO - does this need to be threadsafe?
-     def :=(value: T) given MemoryStack: Unit = {
+     def :=(value: T) given ShaderLoadingEnvironment: Unit = {
        if (location == 0) {
          location = GL20.glGetUniformLocation(programId, name)
        }

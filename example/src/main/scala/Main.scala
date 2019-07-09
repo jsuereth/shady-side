@@ -26,10 +26,18 @@ import org.lwjgl.system.MemoryUtil._
 import com.jsuereth.gl.math._
 import com.jsuereth.gl.io.{
     withMemoryStack,
-    VertexArrayObject
+    VertexArrayObject,
+    ShaderLoadingEnvironment,
+    ActiveTextures
 }
+import org.lwjgl.system.MemoryStack
 import com.jsuereth.gl.mesh.parser.ObjFileParser
 import com.jsuereth.gl.scene._
+import com.jsuereth.gl.texture.{
+    Texture,
+    Texture2D
+}
+import com.jsuereth.gl.math._
 
 object Main {
     val NULL=0L
@@ -134,39 +142,58 @@ object Main {
         // Set the clear color
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f)
         glViewport(0,0,WIDTH, HEIGHT)
+        glEnable(GL_TEXTURE)
+
 
         // Load models and shader.
         val mesh =
           ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/d8.obj")).iterator.next._2
+        val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/lausanne_night.jpg"))
+        
+        val scaleFactor = 1f  
         // TODO - start rendering using the scene...
         scene = SimpleStaticSceneBuilder().
-          add(mesh).scale(0.1f,0.1f,0.1f).orientation(Quaternion.fromEuler(0f,90f,90f)).done().
-          add(mesh).scale(0.1f,0.1f,0.1f).pos(Vec3(5f,2f,4f)).orientation(Quaternion.fromEuler(90f,0f,0f)).done().
-          add(mesh).scale(0.1f,0.1f,0.1f).pos(Vec3(-5f,4f,4f)).orientation(Quaternion.fromEuler(0f,0f,90f)).done().
+          add(mesh).scale(scaleFactor,scaleFactor,scaleFactor).orientation(Quaternion.fromEuler(0f,90f,90f)).done().
+          add(mesh).scale(scaleFactor,scaleFactor,scaleFactor).pos(Vec3(5f,2f,4f)).orientation(Quaternion.fromEuler(90f,0f,0f)).done().
+          add(mesh).scale(scaleFactor,scaleFactor,scaleFactor).pos(Vec3(-5f,4f,4f)).orientation(Quaternion.fromEuler(0f,0f,90f)).done().
           light(Vec3(20f,100f,-5f)).
           done()
-        val projectionMatrix = Matrix4.perspective(45f, WIDTH.toFloat/HEIGHT.toFloat, 1f, 200f) //Matrix4.ortho(-12f,12f,-10f,10f,1f,100f)  
+        val projectionMatrix = 
+          Matrix4.perspective(45f, WIDTH.toFloat/HEIGHT.toFloat, 1f, 200f) 
         val vao = withMemoryStack(mesh.loadVao)
         CartoonShader.load()
 
         // Render a scene using cartoon shader.
         def render(): Unit = {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) // clear the framebuffer
+            glEnable(GL_DEPTH)
             glEnable(GL_CULL_FACE)
+            glCullFace(GL_BACK)
+            glEnable(GL_TEXTURE)
+            glEnable(GL_TEXTURE_2D)
+
             CartoonShader.bind()
             withMemoryStack {
+                delegate env for ShaderLoadingEnvironment {
+                    val stack = the[MemoryStack]
+                    val textures = ActiveTextures()
+                }
+
                 CartoonShader.projectionMatrix := projectionMatrix
                 CartoonShader.lightPosition := scene.lights.next
                 CartoonShader.viewMatrix := scene.camera.viewMatrix
                 CartoonShader.eyePosition := scene.camera.eyePosition
+                CartoonShader.materialKdTexture := uglyTexture
                 for (o <- scene.objectsInRenderOrder) {
+                    env.push()
                     // TODO - pull material from objects.
-                    CartoonShader.materialShininess := 0.3f
+                    CartoonShader.materialShininess := 1.3f
                     CartoonShader.materialKd := 0.5f
                     CartoonShader.materialKs := 0.4f
                     CartoonShader.modelMatrix := o.modelMatrix
                     // TODO - pull the VAO for the model.
                     vao.draw()
+                    env.pop()
                 }
             }
         }

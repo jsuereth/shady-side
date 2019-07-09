@@ -229,8 +229,7 @@ object Matrix4x4 {
    * @param zFar - distance from viewer to far clipping plane.
    */
   def perspective[T : ClassTag : Trigonometry : Fractional](fovy: T, aspect: T, zNear: T, zFar: T): Matrix4x4[T] = {
-    // TODO fix fov angle!
-    val f = (one / tan(fovy / two))
+    val f = (one / tan(angleToRadians(fovy / two)))
     val z = (zFar + zNear) / (zNear - zFar)
     val zFixer = (two*zFar*zNear)/(zNear - zFar)
     Matrix4(Array(

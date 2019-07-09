@@ -16,10 +16,8 @@
 
 import com.jsuereth.gl.shaders._
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.texture.Texture2D
 
-/** This is our target syntax. */
-// Attempt at cel-shading
-import com.jsuereth.gl.math._
 import delegate com.jsuereth.gl.math._
 
 object CartoonShader extends DslShaderProgram {
@@ -28,20 +26,24 @@ object CartoonShader extends DslShaderProgram {
   val viewMatrix = Uniform[Matrix4[Float]]()
   val projectionMatrix = Uniform[Matrix4[Float]]()
 
-  // User for pixel shader / lighting model
+  // Used for pixel shader / lighting model
   val lightPosition = Uniform[Vec3[Float]]()
   val eyePosition = Uniform[Vec3[Float]]()
   val materialShininess = Uniform[Float]()
   val materialKd = Uniform[Float]()
   val materialKs = Uniform[Float]()
+  // Textures in lighting model.
+  val materialKdTexture = Uniform[Texture2D]()
 
   val (vertexShaderCode, fragmentShaderCode) = defineShaders {
     val inPosition = Input[Vec3[Float]](location=0)
     val inNormal = Input[Vec3[Float]](location=1)
+    val texPosition = Input[Vec2[Float]](location=2)
     // TODO - convert to matrix3...
     val worldPos = (modelMatrix() * Vec4(inPosition, 1)).xyz
     val worldNormal = (modelMatrix() * Vec4(inNormal, 0)).xyz
-
+    // Note: We have to do this dance to feed this into fragment shader.
+    val texCoord: Vec2[Float] = texPosition
     glPosition(projectionMatrix() * viewMatrix() * modelMatrix() * Vec4(inPosition, 1))
     // Fragment shader
     fragmentShader {
@@ -57,8 +59,10 @@ object CartoonShader extends DslShaderProgram {
       //Black color if dot product is smaller than 0.3
       //else keep the same colors
       val edgeDetection = if (V.dot(worldNormal) > 0.3f) 1f else 0.7f
-      val light = edgeDetection * (diffuse + specular)
-      Output("color", 0, Vec4(light, light, light, 1f))
+      val texColor = materialKdTexture().texture(texCoord).xyz
+      // TODO - add ambient light?
+      val light = (((texColor*diffuse) + (texColor*specular)) * edgeDetection)
+      Output("color", 0, Vec4(light, 1f))
     }
   }
 }

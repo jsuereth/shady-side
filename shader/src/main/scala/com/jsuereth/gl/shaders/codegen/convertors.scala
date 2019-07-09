@@ -18,6 +18,7 @@ package com.jsuereth.gl.shaders
 package codegen
 
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.texture.{Texture2D}
 
 
 // Symbols for casts between scala number types that we can ignore in GLSL.
@@ -112,6 +113,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         else if(tpe <:< typeOf[Int]) "int"
         else if(tpe <:< typeOf[Double]) "double"
         else if(tpe <:< typeOf[Unit]) "void"
+        else if(tpe <:< typeOf[Texture2D]) "sampler2D"
         // TODO - a real compiler errors, not a runtime exception.
         else throw new RuntimeException(s"Unknown GLSL type: ${tpe}")
     }
@@ -208,6 +210,9 @@ class Convertors[R <: tasty.Reflection](val r: R) {
             // TODO - check the symbol of the method.
             case Apply(Apply(mthd @ Select(lhs, "dot"), List(rhs)), _) => 
               Some(("dot", List(lhs,rhs)))
+            // Handle Sampler2D methods  
+            case  Apply(Apply(Ident("texture"), List(ref)), List(arg)) if ref.tpe <:< typeOf[Texture2D] =>
+              Some("texture", List(ref, arg))
             // Handle our built-int math operations.  TODO - lock this down to NOT be so flexible...
             case Apply(Apply(TypeApply(Ident(mathOp), _), args), /* Implicit witnesses */_) if ourMathOperations(mathOp) =>
               Some((mathOp, args))

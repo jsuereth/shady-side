@@ -17,6 +17,7 @@
 package com.jsuereth.gl.shaders
 
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.texture.{Texture2D}
 
 import scala.quoted._
 import scala.quoted.autolift._
@@ -55,6 +56,8 @@ abstract class DslShaderProgram extends BasicShaderProgram {
   inline def defineShaders[T](f: => T): (String,String) = ${DslShaderProgram.defineShadersImpl('f)}
   inline def fragmentShader[T](f: => T): Unit = f
 
+
+  // COMPILE-TIME ONLY METHODS.  TODO - move this into some kind of API file...
   // Allow DslShaders to access uniform values, but force this call to be within DSL.
   @compileTimeOnly("Can only access a uniform within a Shader.")
   def (c: Uniform[T]) apply[T](): T = ???
@@ -64,4 +67,7 @@ abstract class DslShaderProgram extends BasicShaderProgram {
   def Output[T](name: String, location: Int, value: T): Unit = ???
   @compileTimeOnly("Can only define glPosition within a shader.")
   def glPosition[T](vec: Vec4[T]): Unit = ???
+  /** Samples a texture at a coordinate, pulling the color back. */
+  @compileTimeOnly("Textures can only be sampled within a fragment shader.")
+  def (c: Texture2D) texture(coord: Vec2[Float]): Vec4[Float] = ???
 }

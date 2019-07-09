@@ -56,7 +56,7 @@ class Camera {
   }
   
   def turnRight(amount: Float): Unit = {
-    val rot = Quaternion.rotation(amount, up)
+    val rot = Quaternion.rotation(-amount, up)
     focus = eye + (rot * (focus-eye))
     println(this)
   }
