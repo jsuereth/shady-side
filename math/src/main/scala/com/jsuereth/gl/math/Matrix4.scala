@@ -200,40 +200,57 @@ object Matrix4x4 {
     ))
   }
 
-
+  /** 
+   * Creates a 'view' matrix for a given eye. 
+   *
+   * @param at The location being looked at.
+   * @param eye The location of the eye.
+   * @param up The direction of up according to the eye.
+   */
   def lookAt[T: ClassTag : Rootable : Fractional](at: Vec3[T], eye: Vec3[T], up: Vec3[T]): Matrix4[T] = {
-    val zaxis = (at - eye).normalize        // L  = C - E
-    val xaxis = (zaxis cross up).normalize  // S  = L x U
-    val yaxis = xaxis cross zaxis           // U' = S x L
-    val eyeV = eye
-    val eX = -(eyeV dot xaxis)
-    val eY = -(eyeV dot yaxis)
-    // Z is negative, why negate twice?
-    val eZ = (eyeV dot zaxis)
-    Matrix4(Array(
-      xaxis.x, yaxis.x, -zaxis.x,  zero,   // (S, 0)
-      xaxis.y, yaxis.y, -zaxis.y,  zero,   // (U', 0)
-      xaxis.z, yaxis.z, -zaxis.z,  zero,   // (-L, 0)
-      eX,      eY,      eZ,        one    // (-E, 1)
-    ))
+    val zaxis = (at - eye).normalize          // L  = C - E
+    val xaxis = (zaxis cross up).normalize    // S  = L x U
+    val yaxis = (xaxis cross zaxis).normalize // U' = S x L
+    // TODO - can we auto-multiple the camera/eye matrix?
+    Matrix4[T](Array(
+      xaxis.x, yaxis.x, -zaxis.x,  zero,  // (S, 0)
+      xaxis.y, yaxis.y, -zaxis.y,  zero,  // (U', 0)
+      xaxis.z, yaxis.z, -zaxis.z,  zero,  // (-L, 0)
+      zero,    zero,    zero,      one    // (-E, 1)
+    )) * Matrix4x4.translate[T](-eye.x, -eye.y, -eye.z)
   }
   /**
-    * @param fovy - field of view for y (angle)
-    * @param aspect - aspect ratio of the screen
-    */
+   * Creates a perspective projection matrix.
+   * Based on gluPerspective.
+   *
+   * @param fovy - field of view for y (angle in degrees)
+   * @param aspect - aspect ratio of the screen
+   * @param zNear - distance from viewer to near clipping plane
+   * @param zFar - distance from viewer to far clipping plane.
+   */
   def perspective[T : ClassTag : Trigonometry : Fractional](fovy: T, aspect: T, zNear: T, zFar: T): Matrix4x4[T] = {
     // TODO fix fov angle!
     val f = (one / tan(fovy / two))
     val z = (zFar + zNear) / (zNear - zFar)
     val zFixer = (two*zFar*zNear)/(zNear - zFar)
     Matrix4(Array(
-      f/aspect, zero, zero,   zero,
-      zero,     f,    zero,   zero,
-      zero,     zero, z,      -one,
-      zero,     zero, zFixer, zero
+      f/aspect, zero, zero,  zero,
+      zero,     f,    zero,  zero,
+      zero,     zero, z,     zFixer,
+      zero,     zero, -one,  zero
     ))
   }
 
+  /**
+   * Creates an orthographic projection matrix.
+   *
+   * @param left  The left clipping plane (x)
+   * @param right The right clipping plane (x)
+   * @param top The top clipping plane (y)
+   * @param bottom The bottom clipping plane (y)
+   * @param near The near clipping plane (z)
+   * @param far The far clipping plane (z)
+   */
   def ortho[T : ClassTag : Fractional](left: T, right: T, bottom: T, top: T, near: T, far: T): Matrix4[T] = {
     val a = two / (right - left)
     val b = two / (top - bottom)
@@ -244,10 +261,10 @@ object Matrix4x4 {
     val tz = -(far + near) / (far - near)
 
     Matrix4(Array(
-      a,     zero, zero, zero,
-      zero,  b,    zero, zero,
-      zero,  zero, c,    zero,
-      tx,    ty,   tz,   one))
+      a,     zero, zero, tx,
+      zero,  b,    zero, ty,
+      zero,  zero, c,    tz,
+      zero,  zero, zero, one))
   }
 }
 

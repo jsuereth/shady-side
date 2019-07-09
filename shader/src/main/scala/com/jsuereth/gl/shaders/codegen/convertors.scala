@@ -52,6 +52,8 @@ val typeApplyMethods = Map[String, String](
 
 // Operations on java.lang.Math that are built-in on GLSL.
 val javaMathOperations = Set("max", "min", "pow")
+// Operations we've built into our math library that can be translated into GLSL.
+val ourMathOperations = Set("max", "min", "pow")
 
 trait StmtConvertorEnv {
     def recordUniform(name: String, tpe: String): Unit
@@ -206,6 +208,9 @@ class Convertors[R <: tasty.Reflection](val r: R) {
             // TODO - check the symbol of the method.
             case Apply(Apply(mthd @ Select(lhs, "dot"), List(rhs)), _) => 
               Some(("dot", List(lhs,rhs)))
+            // Handle our built-int math operations.  TODO - lock this down to NOT be so flexible...
+            case Apply(Apply(TypeApply(Ident(mathOp), _), args), /* Implicit witnesses */_) if ourMathOperations(mathOp) =>
+              Some((mathOp, args))
             case _ => None
         }
     }

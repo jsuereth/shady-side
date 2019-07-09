@@ -46,6 +46,9 @@ object Rootable {
   }
 }
 
+/** package-level method to compute sqrt on any type that's Rootable. */
 def sqrt[T](value: T) given (r: Rootable[T]): T = r.sqrt(value)
+/** package-level method to compute a root on any type that's Rootable. */
 def root[T](value: T, base: T) given (r: Rootable[T]): T = r.root(value, base)
+/** package-level method to compute the power on any type that's Rootable. */
 def pow[T](base: T, exp: T) given (r: Rootable[T]): T = r.pow(base, exp)
