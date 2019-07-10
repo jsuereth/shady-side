@@ -1,6 +1,7 @@
 # Blender v2.79 (sub 0) OBJ File: 'Deep Space 1_11.blend'
 # www.blender.org
-mtllib deep_space 1_11.mtl
+# Provided from https://github.com/nasa/NASA-3D-Resources
+mtllib deep_space_1_11.mtl
 g _root_Cube.004
 v 0.500000 -0.500000 -0.500000
 v 0.500000 -0.500000 0.500000
