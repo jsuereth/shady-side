@@ -147,6 +147,12 @@ class Convertors[R <: tasty.Reflection](val r: R) {
       case Some(clsSym) => !clsSym.caseFields.isEmpty && !isOpaqueType(tpe)
       case None => false
     }
+    /** Returns the first member name of a structure type, if this is a structure type.   Note: This is a workaround. */
+    def firstStructMemberName(tpe: r.Type): Option[String] =
+      for {
+        struct <- toStructDefinition(tpe)
+        member <- struct.members.headOption
+      } yield member.name
 
 
     /** Extractor for detecting a "fragmentShader {}" block. */

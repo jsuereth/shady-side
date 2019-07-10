@@ -26,7 +26,7 @@ case class WorldData(light: Vec3[Float], eye: Vec3[Float], view: Matrix4[Float],
 object CartoonShader extends DslShaderProgram {
   // Hack to get structures to work.  OpenGL spec + reality may not line up on how to look up structure ids.  Need to rethink
   // ShaderUniformLoadable class...
-  val world = makeUniform[WorldData]("world.light")
+  val world = Uniform[WorldData]()
   val modelMatrix = Uniform[Matrix4[Float]]()
   val materialShininess = Uniform[Float]()
   val materialKd = Uniform[Float]()

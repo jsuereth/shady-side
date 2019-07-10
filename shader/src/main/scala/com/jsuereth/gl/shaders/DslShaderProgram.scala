@@ -38,6 +38,8 @@ object DslShaderProgram {
 
     def valNameImpl given (r: tasty.Reflection): Expr[String] = {
       import r._
+      // TODO - Detect a structure and look up its first uniform member as the location, i.e. make its name be
+      // that member, which is hacky, but an "ok" workaround.
       r.rootContext.owner match {
          case IsValDefSymbol(self) => self.name
          // TODO - real error message!
@@ -45,10 +47,19 @@ object DslShaderProgram {
       }
     }
     inline def valName: String = ${valNameImpl}
+    def valNameOrFirstStructNameImpl[T] given (r: tasty.Reflection, tpe: Type[T]): Expr[String] = {
+      import r._
+      val helpers = codegen.Convertors[r.type](r)
+      if (helpers.isStructType(tpe.unseal.tpe)) { 
+        '{${valNameImpl} + "." + ${helpers.firstStructMemberName(tpe.unseal.tpe).get}} 
+      } else valNameImpl
+    }
+    inline def valOrStructName[T]: String = ${valNameOrFirstStructNameImpl[T]}
 
     def testStructDefImpl[T] given (r: tasty.Reflection, tpe: Type[T]): Expr[String] = {
       import r._
       val helpers = codegen.Convertors[r.type](r)
+
       helpers.toStructDefinition(tpe.unseal.tpe).map(_.toProgramString).toString
     }
     inline def testStructDef[T] = ${testStructDefImpl[T]}
@@ -56,7 +67,7 @@ object DslShaderProgram {
 abstract class DslShaderProgram extends BasicShaderProgram {
 
   // TODO - we'd also like to implicit-match eitehr ShaderUniformLoadable *or* OpaqueGlslType.
-  inline def Uniform[T : ShaderUniformLoadable](): Uniform[T] = MyUniform[T](DslShaderProgram.valName)
+  inline def Uniform[T : ShaderUniformLoadable](): Uniform[T] = MyUniform[T](DslShaderProgram.valOrStructName[T])
 
   // API for defining shaders...
 
