@@ -49,6 +49,12 @@ object Main {
 
     def run(): Unit = {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
+        System.out.println("Example shaders")
+        System.out.println("--- Vertex Shader ---")
+        System.out.println(CartoonShader.vertexShaderCode)
+        System.out.println("--- Fragment Shader ---")
+        System.out.println(CartoonShader.fragmentShaderCode)
+        System.out.println("---  ---")
         try {
             init()
             loop()
@@ -168,6 +174,13 @@ object Main {
         val vao = withMemoryStack(mesh.loadVao)
         CartoonShader.load()
 
+        System.out.println("-- Shader struct debug --")
+        System.out.println(s" world: ${CartoonShader.debugUniform("world")}")
+        System.out.println(s" world.light: ${CartoonShader.debugUniform("world.light")}")
+        System.out.println(s" world.eye: ${CartoonShader.debugUniform("world.eye")}")
+        System.out.println(s" world.view: ${CartoonShader.debugUniform("world.view")}")
+        System.out.println(s" world.projection: ${CartoonShader.debugUniform("world.projection")}")
+
         // Render a scene using cartoon shader.
         def render(): Unit = {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) // clear the framebuffer
@@ -183,11 +196,10 @@ object Main {
                     val stack = the[MemoryStack]
                     val textures = ActiveTextures()
                 }
-
-                CartoonShader.projectionMatrix := projectionMatrix
-                CartoonShader.lightPosition := scene.lights.next
-                CartoonShader.viewMatrix := scene.camera.viewMatrix
-                CartoonShader.eyePosition := scene.camera.eyePosition
+                CartoonShader.world := WorldData(light = scene.lights.next,
+                                                 eye = scene.camera.eyePosition,
+                                                 view = scene.camera.viewMatrix,
+                                                 projection = projectionMatrix)
                 CartoonShader.materialKdTexture := uglyTexture
                 for (o <- scene.objectsInRenderOrder) {
                     env.push()
