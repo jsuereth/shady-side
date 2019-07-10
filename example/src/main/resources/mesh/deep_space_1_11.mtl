@@ -1,0 +1,94 @@
+# Blender MTL File: 'Deep Space 1_11.blend'
+# Material Count: 8
+
+newmtl DS1_tex_01
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd texture/DS1_tex_01.psd
+
+newmtl None
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+
+newmtl black_krinkle
+Ns 100.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.003917 0.003917 0.003917
+Ks 0.192187 0.192187 0.192187
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd foil_n.png
+map_Bump texture/foil_n.png
+
+newmtl foil_gold
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.557647 0.412941 0.056471
+Ks 0.866667 0.850980 0.658824
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd foil_n.png
+map_Bump -bm 0.450000 texture/foil_n.png
+refl texture/foil_gold_ramp.png
+
+newmtl foil_gold_NONE
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.557647 0.412941 0.056471
+Ks 0.866667 0.850980 0.658824
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Bump -bm 0.450000 texture/foil_n.png
+refl texture/foil_gold_ramp.png
+
+newmtl foil_silver
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.578934 0.578934 0.578934
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd foil_n.png
+map_Bump -bm 0.450000 texture/foil_n.png
+refl texture/foil_silver_ramp.png
+
+newmtl foil_silver_NONE
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.578934 0.578934 0.578934
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Bump -bm 0.450000 texture/foil_n.png
+refl texture/foil_silver_ramp.png
+
+newmtl shiny_panel
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd texture/DS1_tex_01.psd

@@ -146,9 +146,14 @@ object Main {
 
 
         // Load models and shader.
+        val models = ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/deep_space_1_11.obj"))
+        System.out.println("Done loading models!")
+        for ((name, mesh) <- models) {
+            System.err.println(s" - Loaded model [$name] w/ ${mesh.vertices.size} vertices, ${mesh.normals.size} normals, ${mesh.textureCoords.size} texcoords, ${mesh.faces.size} faces")
+        }
         val mesh =
-          ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/d8.obj")).iterator.next._2
-        val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/lausanne_night.jpg"))
+          models.iterator.next._2
+        val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/texture/foil_silver_ramp.png"))
         
         val scaleFactor = 1f  
         // TODO - start rendering using the scene...

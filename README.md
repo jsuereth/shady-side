@@ -88,10 +88,14 @@ Here's a set of TODOs for this project.  These are just the ones we find interes
   having name collisions.
 - [ ] Report inconsistency of companion-object vs. free-floating delegates/givens.  
 
+# Assets
+
+Mesh assets are graciously provided from NASA, with others.  
+See [https://github.com/nasa/NASA-3D-Resources](https://github.com/nasa/NASA-3D-Resources) for more options.
 
 # Community Guidelines
 
-See [CONTRIBUTING.md] and [CODE_OF_CONDUCT.md]
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 # License
 

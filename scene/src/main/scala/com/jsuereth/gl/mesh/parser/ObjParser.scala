@@ -108,6 +108,7 @@ class ObjMeshParser() {
       case ObjLine("vt", P3f(u,v,_))   => textureCoords.append(Vec2(u,v)) // ignore 3d texture coords
       case ObjLine("vn", P3f(x,y,z)) => normals.append(Vec3(x,y,z).normalize)    // vertex normals
       case ObjLine("f", F(face))     => faces.append(face)
+      // TODO - support polylines ("l")
       case msg => System.err.println(s"Could not read line in object: $msg") // TODO - better errors.
     }
 
