@@ -123,4 +123,7 @@ abstract class BasicShaderProgram {
     def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = {
       MyUniform[T](name)
     }
+
+    // Temporary for debugging purposes only.
+    def debugUniform(name: String): Int = GL20.glGetUniformLocation(programId, name)
 }

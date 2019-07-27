@@ -39,6 +39,8 @@ enum Declaration {
   case Output(name: String, tpe: String, location: Option[Int] = None)
   // TODO - method with args...
   case Method(name: String, tpe: String, block: Seq[Statement])
+  /** The definitiion of a struct. */
+  case Struct(name: String, members: Seq[StructMember])
 
   def toProgramString: String = this match {
     case Uniform(name, tpe) => s"uniform $tpe $name;"
@@ -47,7 +49,13 @@ enum Declaration {
     case Output(name, tpe, Some(location)) => s"layout (location = $location) out $tpe $name;"
     case Output(name, tpe, None) => s"out $tpe $name;"
     case Method(name, tpe, block) => s"$tpe $name() {\n  ${block.map(_.toProgramString).mkString("\n  ")}\n}"
+    case Struct(name, members) => s"struct $name {\n  ${members.map(_.toProgramString).mkString("\n  ")}\n};"
   }
+}
+
+/** A member of a structure. */
+case class StructMember(name: String, tpe: String) {
+  def toProgramString: String = s"$tpe $name;"
 }
 
 /** Statements in the GLSL language. */
