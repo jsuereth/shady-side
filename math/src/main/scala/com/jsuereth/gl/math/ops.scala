@@ -22,13 +22,13 @@ import scala.math.Fractional
 
 // Remove implicit conversion warning....
 
-delegate MyNumericOps[T] {
+given MyNumericOps[T] {
   def (x: T) +(y: T) given (n: Numeric[T]): T = n.plus(x,y)
   def (x: T) -(y: T) given (n: Numeric[T]): T = n.minus(x,y)
   def (x: T) *(y: T) given (n: Numeric[T]): T = n.times(x,y)
   def (x: T) unary_- given (n: Numeric[T]): T = n.negate(x)
 }
-delegate MyFractionalOps[T] {
+given MyFractionalOps[T] {
   def (x: T) /(y: T) given (f: Fractional[T]): T = f.div(x,y)
 }
 

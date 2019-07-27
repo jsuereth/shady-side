@@ -4,6 +4,7 @@ bin
 .settings
 .metadata
 .classpath
+.metals
 .project
 
 # idea

@@ -43,14 +43,14 @@ def angleToRadians[T](value: T)  given (t: Trigonometry[T]): T = t.angleToRadian
 object Trigonometry {
   // TODO - Fast lookup tables
   // For now we just provide java's implementation of trig.
-  delegate JavaFloatTrig for Trigonometry[Float] {
+  given JavaFloatTrig as Trigonometry[Float] {
     def sin(value: Float): Float = Math.sin(value.toDouble).toFloat
     def cos(value: Float): Float = Math.cos(value.toDouble).toFloat
     def tan(value: Float): Float = Math.tan(value.toDouble).toFloat
     private val conversionFactor = (scala.math.Pi / 180.0f).toFloat
     def angleToRadians(value: Float): Float = value * conversionFactor
   }
-  delegate JavaDoubleTrig for Trigonometry[Double] {
+  given JavaDoubleTrig as Trigonometry[Double] {
     def sin(value: Double): Double = Math.sin(value)
     def cos(value: Double): Double = Math.cos(value)
     def tan(value: Double): Double = Math.tan(value)

@@ -43,17 +43,17 @@ object ShaderUniformLoadable {
   def textures given ShaderLoadingEnvironment: ActiveTextures = the[ShaderLoadingEnvironment].textures
 
 
-  delegate for ShaderUniformLoadable[Float] {
+  given as ShaderUniformLoadable[Float] {
     def loadUniform(location: Int, value: Float) given ShaderLoadingEnvironment: Unit =
       glUniform1f(location, value)
   }
 
-  delegate for ShaderUniformLoadable[Int] {
+  given as ShaderUniformLoadable[Int] {
     def loadUniform(location: Int, value: Int) given ShaderLoadingEnvironment: Unit =
       glUniform1i(location, value)
   }
   import com.jsuereth.gl.math._
-  delegate Matrix3x3FloatLoader for ShaderUniformLoadable[Matrix3x3[Float]] {
+  given Matrix3x3FloatLoader as ShaderUniformLoadable[Matrix3x3[Float]] {
     import org.lwjgl.opengl.GL20.glUniformMatrix3fv
     def loadUniform(location: Int, value: Matrix3x3[Float]) given ShaderLoadingEnvironment: Unit = {
       val buf: java.nio.FloatBuffer = {
@@ -67,7 +67,7 @@ object ShaderUniformLoadable {
       glUniformMatrix3fv(location, false, buf)
     }
   }
-  delegate Matrix4x4FloatUniformLoader for ShaderUniformLoadable[Matrix4x4[Float]] {
+  given Matrix4x4FloatUniformLoader as ShaderUniformLoadable[Matrix4x4[Float]] {
     import org.lwjgl.system.MemoryStack
     import org.lwjgl.opengl.GL20.glUniformMatrix4fv
     def loadUniform(location: Int, value: Matrix4x4[Float]) given ShaderLoadingEnvironment: Unit = {
@@ -83,38 +83,38 @@ object ShaderUniformLoadable {
     }
   }
   // TODO - report bugs about naming
-  delegate loadVec2Float for ShaderUniformLoadable[Vec2[Float]] {
+  given loadVec2Float as ShaderUniformLoadable[Vec2[Float]] {
     import org.lwjgl.opengl.GL20.glUniform2f
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec2[Float]) given ShaderLoadingEnvironment: Unit =
       glUniform2f(location, value.x, value.y)
   }
-  delegate loadVec2Int for ShaderUniformLoadable[Vec2[Int]] {
+  given loadVec2Int as ShaderUniformLoadable[Vec2[Int]] {
     import org.lwjgl.opengl.GL20.glUniform2i
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec2[Int]) given ShaderLoadingEnvironment: Unit =
       glUniform2i(location, value.x, value.y)
   }
-  delegate loadVec3Float for ShaderUniformLoadable[Vec3[Float]] {
+  given loadVec3Float as ShaderUniformLoadable[Vec3[Float]] {
     import org.lwjgl.opengl.GL20.glUniform3f
     import org.lwjgl.opengl.GL20.glUniform4f
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec3[Float]) given ShaderLoadingEnvironment: Unit =
       glUniform3f(location, value.x, value.y, value.z)
   }
-  delegate loadVec3Int for ShaderUniformLoadable[Vec3[Int]] {
+  given loadVec3Int as ShaderUniformLoadable[Vec3[Int]] {
     import org.lwjgl.opengl.GL20.glUniform3i
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec3[Int]) given ShaderLoadingEnvironment: Unit =
     glUniform3i(location, value.x, value.y, value.z)
   }
-  delegate loadVec4Float for ShaderUniformLoadable[Vec4[Float]] {
+  given loadVec4Float as ShaderUniformLoadable[Vec4[Float]] {
     import org.lwjgl.opengl.GL20.glUniform4f
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec4[Float]) given ShaderLoadingEnvironment: Unit =
       glUniform4f(location, value.x, value.y, value.z, value.w)
   }
-  delegate loadVec4Int for ShaderUniformLoadable[Vec4[Int]] {
+  given loadVec4Int as ShaderUniformLoadable[Vec4[Int]] {
     import org.lwjgl.opengl.GL20.glUniform4i
     import org.lwjgl.system.MemoryStack
     def loadUniform(location: Int, value: Vec4[Int]) given ShaderLoadingEnvironment: Unit =
@@ -123,7 +123,7 @@ object ShaderUniformLoadable {
 
   // Now opaque types, i.e. textures + buffers.
   import com.jsuereth.gl.texture._
-  delegate for ShaderUniformLoadable[Texture2D] {
+  given as ShaderUniformLoadable[Texture2D] {
     def loadUniform(location: Int, value: Texture2D) given ShaderLoadingEnvironment: Unit = {
       // TODO - figure out how to free acquired textures in a nice way
       val id = textures.acquire()
