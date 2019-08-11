@@ -275,6 +275,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         import r._
         c match {
             case Constant(null) => "null"
+            case Constant(_: Unit) => ""
             case Constant(n) => n.toString
         }
     }

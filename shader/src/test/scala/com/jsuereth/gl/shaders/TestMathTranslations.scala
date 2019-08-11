@@ -4,8 +4,8 @@ package testmathtranslation
 
 import org.junit.Test
 import org.junit.Assert._
-
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.test.assertCleanEquals
 
 /** This is our target syntax. */
 // Attempt at cel-shading
@@ -29,7 +29,7 @@ object ExampleShader extends DslShaderProgram {
 
 class Test1 {
   @Test def extractVertexShaderProgramString(): Unit = {
-    assertEquals(
+    assertCleanEquals(
 """#version 300 es
 
 precision highp float;
@@ -41,7 +41,7 @@ void main() {
 }""", ExampleShader.vertexShaderCode)
   }
   @Test def extractFragmentShaderProgramString(): Unit = {
-    assertEquals(
+    assertCleanEquals(
 """#version 300 es
 
 precision highp float;

@@ -7,6 +7,7 @@ import org.junit.Assert._
 
 import com.jsuereth.gl.shaders._
 import com.jsuereth.gl.math._
+import com.jsuereth.gl.test.assertCleanEquals
 import com.jsuereth.gl.texture.Texture2D
 
 /** This is our target syntax. */
@@ -30,7 +31,7 @@ object TextureShader extends DslShaderProgram {
 
 class TestTextureShaders {
   @Test def createsCorrectVertexShader(): Unit = {
-    assertEquals(
+    assertCleanEquals(
 """#version 300 es
 
 precision highp float;
@@ -42,7 +43,7 @@ void main() {
 }""", TextureShader.vertexShaderCode)
   }    
 @Test def createsCorrectFragmentShader(): Unit = {
-    assertEquals(
+  assertCleanEquals(
 """#version 300 es
 
 precision highp float;
