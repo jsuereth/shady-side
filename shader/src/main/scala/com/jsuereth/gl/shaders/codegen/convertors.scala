@@ -167,7 +167,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         /** Returns:  name, type, location */
         def unapply(tree: r.Statement): Option[(String, String, Int)] = tree match {
             // defined in object
-            case ValDef(sym, tpe, Some(Apply(TypeApply(Ident("Input"), _), List(NamedArg("location", Literal(Constant.Int(location))))))) =>
+            case ValDef(sym, tpe, Some(Apply(TypeApply(Ident("Input"), _), List(NamedArg("location", Literal(Constant(location: Int))))))) =>
               Some(sym, toGlslTypeFromTree(tpe), location)
             // TODO -defined in class  
             //case ValDef(sym, tpe, Some(_)) =>
@@ -179,7 +179,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
     object Output {
         /** Returns:  name, value  (todo - tpe + location) */
         def unapply(tree: r.Statement): Option[(String, String, r.Statement)] = tree match {
-            case Apply(TypeApply(Ident("Output"), _), List(Literal(Constant.String(name)), position, value)) => Some(name, toGlslType(value.tpe), value)
+            case Apply(TypeApply(Ident("Output"), _), List(Literal(Constant(name: String)), position, value)) => Some(name, toGlslType(value.tpe), value)
             case _ => None
         }
     }
@@ -274,14 +274,8 @@ class Convertors[R <: tasty.Reflection](val r: R) {
     def constantToString(c: r.Constant): String = {
         import r._
         c match {
-            case Constant.Int(n) => n.toString
-            case Constant.String(n) => '"' + n.toString + '"'
-            case Constant.Long(n) => n.toString
-            case Constant.Boolean(n) => n.toString
-            case Constant.Float(n) => n.toString
-            case Constant.Double(n) => n.toString
-            case Constant.Unit() => ""
-            case Constant.Null() => "null"
+            case Constant(null) => "null"
+            case Constant(n) => n.toString
         }
     }
 

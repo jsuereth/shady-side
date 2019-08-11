@@ -28,38 +28,37 @@ import org.lwjgl.system.MemoryStack
 
 /** this object contains our helper macros for this DSL. */
 object DslShaderProgram {
-    def defineShadersImpl[T](f: Expr[T]) given (r: tasty.Reflection): Expr[(String,String)] = {
-        import r._
-        val helpers = codegen.Convertors[r.type](r)
+    def defineShadersImpl[T](f: Expr[T]) given (ctx: QuoteContext): Expr[(String,String)] = {
+        import ctx.tasty._
+        val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
         val (vert,frag) = helpers.convert(f.unseal)
         // TODO - we need to detect cross/references between shaders and lift into input/output variables.
         '{Tuple2(${vert.toProgramString}, ${frag.toProgramString})}
     }
 
-    def valNameImpl given (r: tasty.Reflection): Expr[String] = {
-      import r._
+    def valNameImpl given (ctx: QuoteContext): Expr[String] = {
+      import ctx.tasty._
       // TODO - Detect a structure and look up its first uniform member as the location, i.e. make its name be
       // that member, which is hacky, but an "ok" workaround.
-      r.rootContext.owner match {
+      ctx.tasty.rootContext.owner match {
          case IsValDefSymbol(self) => self.name
          // TODO - real error message!
          case _ => throw new RuntimeException(s"Uniform() must be directly assigned to a val")
       }
     }
     inline def valName: String = ${valNameImpl}
-    def valNameOrFirstStructNameImpl[T] given (r: tasty.Reflection, tpe: Type[T]): Expr[String] = {
-      import r._
-      val helpers = codegen.Convertors[r.type](r)
+    def valNameOrFirstStructNameImpl[T] given (ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
+      import ctx.tasty._
+      val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
       if (helpers.isStructType(tpe.unseal.tpe)) { 
         '{${valNameImpl} + "." + ${helpers.firstStructMemberName(tpe.unseal.tpe).get}} 
       } else valNameImpl
     }
     inline def valOrStructName[T]: String = ${valNameOrFirstStructNameImpl[T]}
 
-    def testStructDefImpl[T] given (r: tasty.Reflection, tpe: Type[T]): Expr[String] = {
-      import r._
-      val helpers = codegen.Convertors[r.type](r)
-
+    def testStructDefImpl[T] given (ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
+      import ctx.tasty._
+      val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
       helpers.toStructDefinition(tpe.unseal.tpe).map(_.toProgramString).toString
     }
     inline def testStructDef[T] = ${testStructDefImpl[T]}
