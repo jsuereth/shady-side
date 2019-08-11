@@ -4,6 +4,7 @@ import org.junit.Assert._
 import com.jsuereth.gl.shaders._
 import com.jsuereth.gl.math._
 import com.jsuereth.gl.io._
+import com.jsuereth.gl.test.assertCleanEquals
 
 /** This is our target syntax. */
 import com.jsuereth.gl.math._
@@ -23,7 +24,7 @@ object ExampleStructShader extends DslShaderProgram {
 
 class TestStructs {
   @Test def extractVertexShader(): Unit = {
-    assertEquals(
+    assertCleanEquals(
 """#version 300 es
 
 precision highp float;
@@ -35,7 +36,7 @@ void main() {
 }""", ExampleStructShader.vertexShaderCode)
   }
   @Test def extractPixelShader(): Unit = {
-    assertEquals(
+    assertCleanEquals(
 """#version 300 es
 
 precision highp float;
@@ -51,7 +52,8 @@ uniform Material material;
 void main() {
   color = vec4((material).color,1.0);
 }""", ExampleStructShader.fragmentShaderCode)
-
-    assertEquals("material", ExampleStructShader.material.name)
+    // We should find the first value of the structure here,
+    // since we do offset-based loading.
+    assertEquals("material.kd", ExampleStructShader.material.name)
   }
 }

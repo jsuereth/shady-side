@@ -1,0 +1,3 @@
+*.scala text eolf=lf
+*.sh text eol=lf
+* text=auto

@@ -58,36 +58,36 @@ object BufferLoadable {
 
     // Defines all the buffer loading for primitives.
     // TODO - figure out if we can autogenerate this or clean it up in otherways.
-    delegate for BufferLoadable[Float] {
+    given as BufferLoadable[Float] {
         def load(value: Float, buf: ByteBuffer): Unit =
           buf.putFloat(value)
     }
-    delegate for BufferLoadable[Double] {
+    given as BufferLoadable[Double] {
         def load(value: Double, buf: ByteBuffer): Unit =
           buf.putDouble(value)
     }
-    delegate for BufferLoadable[Boolean] {
+    given as BufferLoadable[Boolean] {
         def load(value: Boolean, buf: ByteBuffer): Unit =
           buf.put(if(value) 1.toByte else 0.toByte)
     }
-    delegate for BufferLoadable[Byte] {
+    given as BufferLoadable[Byte] {
         def load(value: Byte, buf: ByteBuffer): Unit =
           buf.put(value)
     }
-    delegate for BufferLoadable[Short] {
+    given as BufferLoadable[Short] {
         def load(value: Short, buf: ByteBuffer): Unit =
           buf.putShort(value)
     }
-    delegate for BufferLoadable[Int] {
+    given as BufferLoadable[Int] {
         def load(value: Int, buf: ByteBuffer): Unit =
           buf.putInt(value)
     }
-    delegate for BufferLoadable[Long] {
+    given as BufferLoadable[Long] {
         def load(value: Long, buf: ByteBuffer): Unit =
           buf.putLong(value)
     }
 
-    delegate [T] for BufferLoadable[Seq[T]] given BufferLoadable[T] {
+    given [T] as BufferLoadable[Seq[T]] given BufferLoadable[T] {
         def load(value: Seq[T], buf: ByteBuffer): Unit = {
             val i = value.iterator
             while(i.hasNext) {
@@ -97,23 +97,23 @@ object BufferLoadable {
     }
 
   import com.jsuereth.gl.math._
-  delegate [T] for BufferLoadable[Matrix3x3[T]] given io.BufferLoadable[T] {
+  given [T] as BufferLoadable[Matrix3x3[T]] given io.BufferLoadable[T] {
     def load(value: Matrix3x3[T], buf: java.nio.ByteBuffer): Unit = {
       buf.loadArray(value.values, 9, 0)
     }
   }
-  delegate [T] for BufferLoadable[Matrix4x4[T]] given io.BufferLoadable[T] {
+  given [T] as BufferLoadable[Matrix4x4[T]] given io.BufferLoadable[T] {
     def load(value: Matrix4x4[T], buf: java.nio.ByteBuffer): Unit = {
       buf.loadArray(value.values, 16, 0)
     }
   }
-  delegate [T] for BufferLoadable[Vec2[T]] given io.BufferLoadable[T] {
+  given [T] as BufferLoadable[Vec2[T]] given io.BufferLoadable[T] {
     def load(value: Vec2[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
     }
   }
-  delegate [T] for BufferLoadable[Vec4[T]] given io.BufferLoadable[T] {
+  given [T] as BufferLoadable[Vec4[T]] given io.BufferLoadable[T] {
     def load(value: Vec4[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
@@ -121,7 +121,7 @@ object BufferLoadable {
       buf.load(value.w)
     }
   }
-  delegate [T] for BufferLoadable[Vec3[T]] given io.BufferLoadable[T] {
+  given [T] as BufferLoadable[Vec3[T]] given io.BufferLoadable[T] {
     def load(value: Vec3[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
