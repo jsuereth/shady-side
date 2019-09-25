@@ -32,13 +32,13 @@ trait Rootable[T] {
   def pow(base: T, exp: T): T
 }
 object Rootable {
-  given as Rootable[Float] {
+  given Rootable[Float] {
     // Approximation for arbitrary roots.
     def root(value: Float, base: Float): Float = pow(value, 1f / base)
     def sqrt(value: Float): Float = Math.sqrt(value.toDouble).toFloat
     def pow(base: Float, exp: Float): Float = Math.pow(base.toDouble, exp.toDouble).toFloat
   }
-  given as Rootable[Double] {
+  given Rootable[Double] {
     // Approximation for arbitrary roots.
     def root(value: Double, base: Double): Double = Math.pow(Math.E, Math.log(base) / value.toDouble)
     def sqrt(value: Double): Double = Math.sqrt(value)
@@ -47,8 +47,8 @@ object Rootable {
 }
 
 /** package-level method to compute sqrt on any type that's Rootable. */
-def sqrt[T](value: T) given (r: Rootable[T]): T = r.sqrt(value)
+def sqrt[T](value: T)(given r: Rootable[T]): T = r.sqrt(value)
 /** package-level method to compute a root on any type that's Rootable. */
-def root[T](value: T, base: T) given (r: Rootable[T]): T = r.root(value, base)
+def root[T](value: T, base: T)(given r: Rootable[T]): T = r.root(value, base)
 /** package-level method to compute the power on any type that's Rootable. */
-def pow[T](base: T, exp: T) given (r: Rootable[T]): T = r.pow(base, exp)
+def pow[T](base: T, exp: T)(given r: Rootable[T]): T = r.pow(base, exp)

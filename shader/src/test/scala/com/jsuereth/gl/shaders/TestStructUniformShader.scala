@@ -7,8 +7,7 @@ import com.jsuereth.gl.io._
 import com.jsuereth.gl.test.assertCleanEquals
 
 /** This is our target syntax. */
-import com.jsuereth.gl.math._
-import delegate com.jsuereth.gl.math._
+import com.jsuereth.gl.math.{given, _}
 
 case class Material(kd: Float, ks: Float, color: Vec3[Float]) derives ShaderUniformLoadable
 object ExampleStructShader extends DslShaderProgram {

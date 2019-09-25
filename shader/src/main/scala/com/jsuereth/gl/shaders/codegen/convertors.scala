@@ -17,6 +17,7 @@
 package com.jsuereth.gl.shaders
 package codegen
 
+import quoted.QuoteContext
 import com.jsuereth.gl.math._
 import com.jsuereth.gl.texture.{Texture2D}
 
@@ -99,12 +100,14 @@ class DefaultShaderConvertEnv extends ShaderConvertorEnv {
           names += name
         }
     override def ast: codegen.Ast = {
-        codegen.Ast(globals :+ codegen.Declaration.Method("main", "void", stmts))
+        codegen.Ast(globals.toSeq :+ codegen.Declaration.Method("main", "void", stmts.toSeq))
     }
 }
 
 /** Utilities for translating Scala into GLSL. */
-class Convertors[R <: tasty.Reflection](val r: R) {
+class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
+    // TODO - given new API we may be able to use Type/TypeTree directly without
+    // hiding it behind tasty.Reflection instance.
     import r._
 
     def toGlslTypeFromTree(tpe: r.TypeTree): String = toGlslType(tpe.tpe)
@@ -280,7 +283,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         }
     }
 
-    def convertExpr(tree: r.Statement) given (env: StmtConvertorEnv): Expr = tree match {
+    def convertExpr(tree: r.Statement)(given env: StmtConvertorEnv): Expr = tree match {
         case Uniform(name, tpe) => 
           env.recordUniform(name, tpe)
           Expr.Id(name)
@@ -303,7 +306,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         // TODO - error message for everything else.
         case _ => throw new RuntimeException(s"Unable to convert tree: $tree")
     }
-    def convertStmt(tree: r.Statement) given (env: StmtConvertorEnv): codegen.Statement = tree match {
+    def convertStmt(tree: r.Statement)(given env: StmtConvertorEnv): codegen.Statement = tree match {
         // assign
         case Output(name, tpe, exp) =>
           env.recordOutput(name, tpe, 0) // TODO - location
@@ -319,7 +322,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         case _ => codegen.Statement.Effect(convertExpr(tree))
     }
     // TODO - handle helper methods and extract them separately as definitions.
-    def walkFragmentShader(tree: r.Statement) given (env: ShaderConvertorEnv): Unit = tree match {
+    def walkFragmentShader(tree: r.Statement)(given env: ShaderConvertorEnv): Unit = tree match {
       case Inlined(None, stmts, exp) => walkFragmentShader(exp)
       case Block(statements, last) => 
         for(s <- (statements :+ last)) {
@@ -331,12 +334,12 @@ class Convertors[R <: tasty.Reflection](val r: R) {
     }
 
     // TODO - share some of the "walk" code with walkFragmentShader.
-    def walkVertexShader(tree: r.Statement) given (env: VertexShaderConvertorEnv): Unit = tree match {
+    def walkVertexShader(tree: r.Statement)(given env: VertexShaderConvertorEnv): Unit = tree match {
       // Ignore when we type a block as "Unit"
       case Typed(block, tpe) if tpe.tpe <:< typeOf[Unit] => walkVertexShader(block)
       case FragmentShader(exp) => 
         // TODO - make a new environment, then unify the shaders. after walking.
-        walkFragmentShader(exp) given env.fragmentEnv
+        walkFragmentShader(exp)(given env.fragmentEnv)
       case Inlined(None, stmts, exp) => walkVertexShader(exp)
       case Block(statements, last) => 
         for(s <- (statements :+ last)) {
@@ -351,7 +354,7 @@ class Convertors[R <: tasty.Reflection](val r: R) {
         object env extends DefaultShaderConvertEnv with VertexShaderConvertorEnv {
             override val fragmentEnv = new DefaultShaderConvertEnv()
         }
-        walkVertexShader(tree) given env
+        walkVertexShader(tree)(given env)
         TransformAst(env.ast, env.fragmentEnv.ast)
     }
 }

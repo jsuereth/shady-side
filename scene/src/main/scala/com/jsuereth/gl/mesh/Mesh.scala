@@ -59,7 +59,7 @@ trait Mesh3d {
     /** The faces for this mesh.  Generally an index-reference to the other members. */
     def faces: Seq[Face]
     /** A flattening of indicies to those of the vertex. */
-    private def allIndicies: Seq[FaceIndex] = faces.flatMap(_.vertices).toSeq.distinct
+    private def allIndicies: Seq[FaceIndex] = faces.flatMap(_.vertices).distinct.toSeq
     /** Expensive to compute mechanism of lining up shared vertex/normal/texel coordinates. */
     private def points: Seq[MeshPoint] = {
       for(faceIdx <- allIndicies) yield {
@@ -85,7 +85,7 @@ trait Mesh3d {
 
     // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
     /** Loads this mesh into a VAO that can be rendered. */
-    def loadVao given MemoryStack: VertexArrayObject[MeshPoint] = {
+    def loadVao(given MemoryStack): VertexArrayObject[MeshPoint] = {
       // TODO - Figure out if triangles or quads.
       VertexArrayObject.loadWithIndex(points, idxes)
     }

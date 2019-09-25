@@ -1,6 +1,6 @@
 import com.typesafe.sbt.license.{DepModuleInfo}
 
-val dottyVersion = "0.17.0-RC1"
+val dottyVersion = "0.19.0-RC1"
 val lwjglVersion = "3.2.2"
 val lwjglNatives: String = 
     sys.props("os.name") match {

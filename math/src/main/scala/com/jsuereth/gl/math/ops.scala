@@ -22,16 +22,16 @@ import scala.math.Fractional
 
 // Remove implicit conversion warning....
 
-given MyNumericOps[T] {
-  def (x: T) +(y: T) given (n: Numeric[T]): T = n.plus(x,y)
-  def (x: T) -(y: T) given (n: Numeric[T]): T = n.minus(x,y)
-  def (x: T) *(y: T) given (n: Numeric[T]): T = n.times(x,y)
-  def (x: T) unary_- given (n: Numeric[T]): T = n.negate(x)
+given MyNumericOps: {
+  def (x: T) +[T](y: T)(given n: Numeric[T]): T = n.plus(x,y)
+  def (x: T) -[T](y: T)(given n: Numeric[T]): T = n.minus(x,y)
+  def (x: T) *[T](y: T)(given n: Numeric[T]): T = n.times(x,y)
+  def (x: T) unary_-[T](given n: Numeric[T]): T = n.negate(x)
 }
-given MyFractionalOps[T] {
-  def (x: T) /(y: T) given (f: Fractional[T]): T = f.div(x,y)
+given MyFractionalOps: {
+  def (x: T) /[T](y: T)(given f: Fractional[T]): T = f.div(x,y)
 }
 
-def zero[T: Numeric]: T = the[Numeric[T]].zero
-def one[T: Numeric]: T = the[Numeric[T]].one
+def zero[T: Numeric]: T = summon[Numeric[T]].zero
+def one[T: Numeric]: T = summon[Numeric[T]].one
 def two[T: Numeric]: T = one + one

@@ -89,5 +89,5 @@ class SimpleStaticSceneBuilder {
       }
   }
 
-  def done(): Scene = SimpleStaticScene(c, l, os)
+  def done(): Scene = SimpleStaticScene(c, l, os.toSeq)
 }

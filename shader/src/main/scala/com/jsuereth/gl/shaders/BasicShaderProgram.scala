@@ -111,11 +111,11 @@ abstract class BasicShaderProgram {
    protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
      var location: Int = 0
      // TODO - does this need to be threadsafe?
-     def :=(value: T) given ShaderLoadingEnvironment: Unit = {
+     def :=(value: T)(given ShaderLoadingEnvironment): Unit = {
        if (location == 0) {
          location = GL20.glGetUniformLocation(programId, name)
        }
-       the[ShaderUniformLoadable[T]].loadUniform(location, value)
+       summon[ShaderUniformLoadable[T]].loadUniform(location, value)
      }
      
    }

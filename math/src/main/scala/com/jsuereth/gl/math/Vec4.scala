@@ -31,24 +31,24 @@ final class Vec4[T : ClassTag](private[this] val values: Array[T]) {
   def rgb: Vec3[T] = new Vec3[T](values)
 
 
-  def +(other: Vec4[T]) given Numeric[T]: Vec4[T] = Vec4(x+other.x, y+other.y, z+other.z, w+other.w)
-  def -(other: Vec4[T]) given Numeric[T]: Vec4[T] = Vec4(x-other.x, y-other.y, z-other.z, w-other.w)
+  def +(other: Vec4[T])(given Numeric[T]): Vec4[T] = Vec4(x+other.x, y+other.y, z+other.z, w+other.w)
+  def -(other: Vec4[T])(given Numeric[T]): Vec4[T] = Vec4(x-other.x, y-other.y, z-other.z, w-other.w)
   // behaves as GLSL would, just multiplies pairs...
-  def *(other: Vec4[T]) given Numeric[T]: Vec4[T] = Vec4(x*other.x, y*other.y, z*other.z, w*other.w)
+  def *(other: Vec4[T])(given Numeric[T]): Vec4[T] = Vec4(x*other.x, y*other.y, z*other.z, w*other.w)
   // TODO - we may need to disambiguate this from the above overload.
-  def *(quant: T) given Numeric[T]: Vec4[T] = Vec4(x*quant, y*quant, z*quant, w*quant)
+  def *(quant: T)(given Numeric[T]): Vec4[T] = Vec4(x*quant, y*quant, z*quant, w*quant)
   /** Computes the dot product of this vector with another. */
-  def dot(other: Vec4[T]) given Numeric[T]: T =
+  def dot(other: Vec4[T])(given Numeric[T]): T =
     (x*other.x) + (y*other.y) + (z*other.z) + (w*other.w)
   // TODO: cross
 
   /** the square of the length of this vector. */
-  def lengthSquared given Numeric[T]: T = this dot this
+  def lengthSquared(given Numeric[T]): T = this dot this
   /** Returns the length of this vector.  Requires a SQRT function. */
-  def length given Rootable[T], Numeric[T]: T =  sqrt(lengthSquared)
+  def length(given Rootable[T], Numeric[T]): T =  sqrt(lengthSquared)
 
   /** Normalizes this vector (setting distance to 1).  Note:  This requires a valid SQRT function. */
-  def normalize given Fractional[T], Rootable[T]: Vec4[T] = {
+  def normalize(given Fractional[T], Rootable[T]): Vec4[T] = {
     val l = length
     new Vec4[T](Array((x / l), (y / l), (y / l), (w / l)))
   }
