@@ -1,0 +1,16 @@
+language: scala
+
+script:
+  - sbt compile
+  - sbt test
+
+before_cache:
+  - find $HOME/.cache/coursier/v1 -name "ivydata-*.properties" -delete
+  - find $HOME/.ivy2              -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt               -name "*.lock"               -delete
+
+cache:
+  directories:
+    - $HOME/.cache/coursier/v1
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
