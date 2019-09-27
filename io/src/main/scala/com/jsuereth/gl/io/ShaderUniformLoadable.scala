@@ -18,10 +18,11 @@ package com.jsuereth.gl.io
 
 
 import org.lwjgl.system.MemoryStack
+import scala.compiletime.summonFrom
 
 /** Denotes that a variable can be loaded into an OpenGL shader as a uniform. */
 trait ShaderUniformLoadable[T] {
-  def loadUniform(location: Int, value: T) given ShaderLoadingEnvironment: Unit
+  def loadUniform(location: Int, value: T)(given ShaderLoadingEnvironment): Unit
 }
 
 /** The environment we make use of when loading a shader. */
@@ -38,24 +39,24 @@ trait ShaderLoadingEnvironment {
 import org.lwjgl.opengl.GL20.{glUniform1f, glUniform1i}
 object ShaderUniformLoadable {
   /** Helper to pull the stack off the shader loading environment. */
-  def stack given ShaderLoadingEnvironment: MemoryStack = the[ShaderLoadingEnvironment].stack
+  def stack(given ShaderLoadingEnvironment): MemoryStack = summon[ShaderLoadingEnvironment].stack
   /** Helper to grab active texutres off the shader loading environment. */
-  def textures given ShaderLoadingEnvironment: ActiveTextures = the[ShaderLoadingEnvironment].textures
+  def textures(given ShaderLoadingEnvironment): ActiveTextures = summon[ShaderLoadingEnvironment].textures
 
 
-  given as ShaderUniformLoadable[Float] {
-    def loadUniform(location: Int, value: Float) given ShaderLoadingEnvironment: Unit =
+  given ShaderUniformLoadable[Float] {
+    def loadUniform(location: Int, value: Float)(given ShaderLoadingEnvironment): Unit =
       glUniform1f(location, value)
   }
 
-  given as ShaderUniformLoadable[Int] {
-    def loadUniform(location: Int, value: Int) given ShaderLoadingEnvironment: Unit =
+  given ShaderUniformLoadable[Int] {
+    def loadUniform(location: Int, value: Int)(given ShaderLoadingEnvironment): Unit =
       glUniform1i(location, value)
   }
   import com.jsuereth.gl.math._
-  given Matrix3x3FloatLoader as ShaderUniformLoadable[Matrix3x3[Float]] {
+  given Matrix3x3FloatLoader: ShaderUniformLoadable[Matrix3x3[Float]] {
     import org.lwjgl.opengl.GL20.glUniformMatrix3fv
-    def loadUniform(location: Int, value: Matrix3x3[Float]) given ShaderLoadingEnvironment: Unit = {
+    def loadUniform(location: Int, value: Matrix3x3[Float])(given ShaderLoadingEnvironment): Unit = {
       val buf: java.nio.FloatBuffer = {
         // Here we're allocating a stack-buffer.  We need to ensure we're in a context that has a GL-transition stack.
         val buf = stack.callocFloat(9)
@@ -67,10 +68,10 @@ object ShaderUniformLoadable {
       glUniformMatrix3fv(location, false, buf)
     }
   }
-  given Matrix4x4FloatUniformLoader as ShaderUniformLoadable[Matrix4x4[Float]] {
+  given Matrix4x4FloatUniformLoader: ShaderUniformLoadable[Matrix4x4[Float]] {
     import org.lwjgl.system.MemoryStack
     import org.lwjgl.opengl.GL20.glUniformMatrix4fv
-    def loadUniform(location: Int, value: Matrix4x4[Float]) given ShaderLoadingEnvironment: Unit = {
+    def loadUniform(location: Int, value: Matrix4x4[Float])(given ShaderLoadingEnvironment): Unit = {
       val buf: java.nio.FloatBuffer = {
         // Here we're allocating a stack-buffer.  We need to ensure we're in a context that has a GL-transition stack.
         val buf = stack.calloc(sizeOf[Matrix4x4[Float]])
@@ -83,48 +84,48 @@ object ShaderUniformLoadable {
     }
   }
   // TODO - report bugs about naming
-  given loadVec2Float as ShaderUniformLoadable[Vec2[Float]] {
+  given loadVec2Float: ShaderUniformLoadable[Vec2[Float]] {
     import org.lwjgl.opengl.GL20.glUniform2f
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec2[Float]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec2[Float])(given ShaderLoadingEnvironment): Unit =
       glUniform2f(location, value.x, value.y)
   }
-  given loadVec2Int as ShaderUniformLoadable[Vec2[Int]] {
+  given loadVec2Int: ShaderUniformLoadable[Vec2[Int]] {
     import org.lwjgl.opengl.GL20.glUniform2i
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec2[Int]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec2[Int])(given ShaderLoadingEnvironment): Unit =
       glUniform2i(location, value.x, value.y)
   }
-  given loadVec3Float as ShaderUniformLoadable[Vec3[Float]] {
+  given loadVec3Float: ShaderUniformLoadable[Vec3[Float]] {
     import org.lwjgl.opengl.GL20.glUniform3f
     import org.lwjgl.opengl.GL20.glUniform4f
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec3[Float]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec3[Float])(given ShaderLoadingEnvironment): Unit =
       glUniform3f(location, value.x, value.y, value.z)
   }
-  given loadVec3Int as ShaderUniformLoadable[Vec3[Int]] {
+  given loadVec3Int: ShaderUniformLoadable[Vec3[Int]] {
     import org.lwjgl.opengl.GL20.glUniform3i
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec3[Int]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec3[Int])(given ShaderLoadingEnvironment): Unit =
     glUniform3i(location, value.x, value.y, value.z)
   }
-  given loadVec4Float as ShaderUniformLoadable[Vec4[Float]] {
+  given loadVec4Float: ShaderUniformLoadable[Vec4[Float]] {
     import org.lwjgl.opengl.GL20.glUniform4f
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec4[Float]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec4[Float])(given ShaderLoadingEnvironment): Unit =
       glUniform4f(location, value.x, value.y, value.z, value.w)
   }
-  given loadVec4Int as ShaderUniformLoadable[Vec4[Int]] {
+  given loadVec4Int: ShaderUniformLoadable[Vec4[Int]] {
     import org.lwjgl.opengl.GL20.glUniform4i
     import org.lwjgl.system.MemoryStack
-    def loadUniform(location: Int, value: Vec4[Int]) given ShaderLoadingEnvironment: Unit =
+    def loadUniform(location: Int, value: Vec4[Int])(given ShaderLoadingEnvironment): Unit =
     glUniform4i(location, value.x, value.y, value.z, value.w)
   }
 
   // Now opaque types, i.e. textures + buffers.
   import com.jsuereth.gl.texture._
-  given as ShaderUniformLoadable[Texture2D] {
-    def loadUniform(location: Int, value: Texture2D) given ShaderLoadingEnvironment: Unit = {
+  given ShaderUniformLoadable[Texture2D] {
+    def loadUniform(location: Int, value: Texture2D)(given ShaderLoadingEnvironment): Unit = {
       // TODO - figure out how to free acquired textures in a nice way
       val id = textures.acquire()
       // TOOD - is this needed?
@@ -141,7 +142,7 @@ object ShaderUniformLoadable {
     inline compiletime.erasedValue[T] match {
       case _: (head *: tail) => uniformSize[head] + uniformSize[tail]
       case _: Unit => 0
-      case _ => delegate match {
+      case _ => summonFrom {
         case m: Mirror.ProductOf[T] => uniformSize[m.MirroredElemTypes]
         case primitive: ShaderUniformLoadable[T] => 1
         case _ => compiletime.error("Type is not a valid uniform value!")
@@ -149,15 +150,15 @@ object ShaderUniformLoadable {
     }
 
   /** Derives uniform loading for struct-like case classes.   These MUST have statically known sized. */
-  inline def derived[T] given (m: Mirror.ProductOf[T]): ShaderUniformLoadable[T] =
+  inline def derived[T](given m: Mirror.ProductOf[T]): ShaderUniformLoadable[T] =
     new ShaderUniformLoadable[T] {
-      def loadUniform(location: Int, value: T) given ShaderLoadingEnvironment: Unit =
+      def loadUniform(location: Int, value: T)(given ShaderLoadingEnvironment): Unit =
         loadStructAtIdx[m.MirroredElemTypes](location, 0, value.asInstanceOf[Product])
     }
 
   /** Inline helper to load a value into a location, performing the implicit lookup INLINE. */
-  inline def loadOne[T](location: Int, value: T) given ShaderLoadingEnvironment: Unit =
-     delegate match {
+  inline def loadOne[T](location: Int, value: T)(given ShaderLoadingEnvironment): Unit =
+     summonFrom {
         case loader: ShaderUniformLoadable[T] =>
           loader.loadUniform(location, value)
         case _ =>
@@ -165,7 +166,7 @@ object ShaderUniformLoadable {
      }
 
   /** Peels off a level of case-class property and writes it to a uniform, before continuing to call itself on the next uniform. */
-  inline def loadStructAtIdx[RemainingElems](location: Int, idx: Int, value: Product) given ShaderLoadingEnvironment: Unit = {
+  inline def loadStructAtIdx[RemainingElems](location: Int, idx: Int, value: Product)(given ShaderLoadingEnvironment): Unit = {
     inline compiletime.erasedValue[RemainingElems] match {
       case _: Unit => () // Base case, no elements left.
       case _: Tuple1[head] => loadOne[head](location, value.productElement(idx).asInstanceOf)

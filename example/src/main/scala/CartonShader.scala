@@ -15,11 +15,9 @@
  */
 
 import com.jsuereth.gl.shaders._
-import com.jsuereth.gl.math._
+import com.jsuereth.gl.math.{given, _}
 import com.jsuereth.gl.texture.Texture2D
 import com.jsuereth.gl.io.ShaderUniformLoadable
-
-import delegate com.jsuereth.gl.math._
 
 case class WorldData(light: Vec3[Float], eye: Vec3[Float], view: Matrix4[Float], projection: Matrix4[Float]) derives ShaderUniformLoadable
 

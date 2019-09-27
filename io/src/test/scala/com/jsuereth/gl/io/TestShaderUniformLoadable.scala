@@ -26,8 +26,8 @@ class TestUniformSize {
 
     // The test here is if we compile.  Calling OpenGL at this point will cause an error, since we have no gl context.
     @Test def deriveUnfiromCompiles(): Unit = {
-        delegate testPod for ShaderUniformLoadable[UniformExamplePod] = ShaderUniformLoadable.derived[UniformExamplePod]
+        given testPod: ShaderUniformLoadable[UniformExamplePod] = ShaderUniformLoadable.derived[UniformExamplePod]
         // Test nested derivation.
-        delegate testPod2 for ShaderUniformLoadable[UniformExamplePod3] = ShaderUniformLoadable.derived[UniformExamplePod3]
+        given testPod2: ShaderUniformLoadable[UniformExamplePod3] = ShaderUniformLoadable.derived[UniformExamplePod3]
     }
 }

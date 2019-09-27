@@ -47,10 +47,10 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
   def apply(row: Int)(col: Int): T =
     values(row + (col*4))
 
-  def *(scale: T) given Numeric[T]: Matrix4x4[T] =
+  def *(scale: T)(given Numeric[T]): Matrix4x4[T] =
     Matrix4x4(values map (_ * scale))
 
-  def *(point: Vec4[T]) given Numeric[T]: Vec4[T] = {
+  def *(point: Vec4[T])(given Numeric[T]): Vec4[T] = {
     import point.{x,y,z,w}
     val newX = m11*x + m12*y + m13*z + m14*w
     val newY = m21*x + m22*y + m23*z + m24*w
@@ -59,7 +59,7 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
     Vec4(newX, newY, newZ, newW)
   }
 
-  def *(other: Matrix4x4[T]) given Numeric[T]: Matrix4x4[T] = {
+  def *(other: Matrix4x4[T])(given Numeric[T]): Matrix4x4[T] = {
     // TODO - attempt to use Coppersmith–Winograd algorithm?
     // For now we do this naively, which is possibly more efficeint.
     val next = new Array[T](16)
@@ -74,7 +74,7 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
     Matrix4x4(next)
   }
 
-  def determinant given Numeric[T]: T = {
+  def determinant(given Numeric[T]): T = {
     // TODO - Use a better decomposition to compute the inverse!
     (m14*m23*m32*m41) - (m13*m24*m32*m41) - (m14*m22*m33*m41) + (m12*m24*m33*m41) +
       (m13*m22*m34*m41) - (m12*m23*m34*m41) - (m14*m23*m31*m42) + (m13*m24*m31*m42) +
@@ -91,9 +91,9 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
       m41, m42, m43, m44
     ))
   }
-  def inverse given Fractional[T]: Matrix4x4[T] = {
+  def inverse(given Fractional[T]): Matrix4x4[T] = {
     // Stack overflow when we had 1.0f / determinant.
-    val scale: T = the[Fractional[T]].one / determinant
+    val scale: T = summon[Fractional[T]].one / determinant
     // TODO - use a better decomposition to compute the inverse!
     val n11 = (m23*m34*m42) - (m24*m33*m42) + (m24*m32*m43) - (m22*m34*m43) - (m23*m32*m44) + (m22*m33*m44)
     val n12 = (m14*m33*m42) - (m13*m34*m42) - (m14*m32*m43) + (m12*m34*m43) + (m13*m32*m44) - (m12*m33*m44)

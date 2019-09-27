@@ -21,6 +21,6 @@ import scala.math.Ordering
 // This file defines helper methods to replace the use of java.lang.Math.
 
 /** Returns the maximum value of two options. */
-def max[T: Ordering](lhs: T, rhs: T): T = the[Ordering[T]].max(lhs,rhs)
+def max[T: Ordering](lhs: T, rhs: T): T = summon[Ordering[T]].max(lhs,rhs)
 /** Returns the minimum value of two options. */
-def min[T: Ordering](lhs: T, rhs: T): T = the[Ordering[T]].min(lhs,rhs)
+def min[T: Ordering](lhs: T, rhs: T): T = summon[Ordering[T]].min(lhs,rhs)

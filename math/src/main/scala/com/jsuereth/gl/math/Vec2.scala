@@ -26,21 +26,21 @@ class Vec2[T : ClassTag](private[this] val values: Array[T]) {
   def rg: Vec2[T] = this
   def xy: Vec2[T] = this
 
-  def +(other: Vec2[T]) given Numeric[T]: Vec2[T] = Vec2(x+other.x, y+other.y)
-  def -(other: Vec2[T]) given Numeric[T]: Vec2[T] = Vec2(x-other.x, y-other.y)
+  def +(other: Vec2[T])(given Numeric[T]): Vec2[T] = Vec2(x+other.x, y+other.y)
+  def -(other: Vec2[T])(given Numeric[T]): Vec2[T] = Vec2(x-other.x, y-other.y)
   // behaves as GLSL would, just multiplies pairs...
-  def *(other: Vec2[T]) given Numeric[T]: Vec2[T] = Vec2(x*other.x, y*other.y)
+  def *(other: Vec2[T])(given Numeric[T]): Vec2[T] = Vec2(x*other.x, y*other.y)
 
   /** The dot product of this vector and another. */
-  def dot(other: Vec2[T]) given Numeric[T]: T = x*other.x + y*other.y
+  def dot(other: Vec2[T])(given Numeric[T]): T = x*other.x + y*other.y
 
   /** the square of the length of this vector. */
-  def lengthSquared given Numeric[T]: T = this dot this
+  def lengthSquared(given Numeric[T]): T = this dot this
   /** Returns the length of this vector.  Requires a SQRT function. */
-  def length given Rootable[T], Numeric[T]: T =  sqrt(lengthSquared)
+  def length(given Rootable[T], Numeric[T]): T =  sqrt(lengthSquared)
 
   /** Normalizes this vector (setting distance to 1).  Note:  This requires a valid SQRT function. */
-  def normalize given Fractional[T], Rootable[T]: Vec2[T] =
+  def normalize(given Fractional[T], Rootable[T]): Vec2[T] =
      new Vec2[T](Array((x / length), (y / length)))
 
   override def toString: String = s"($x,$y)"

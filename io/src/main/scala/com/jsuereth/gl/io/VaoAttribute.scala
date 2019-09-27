@@ -19,7 +19,7 @@ package io
 
 import math._
 
-import scala.compiletime.erasedValue
+import scala.compiletime.{erasedValue, summonFrom}
 import deriving.Mirror
 
 /** 
@@ -42,8 +42,8 @@ inline def sizeOf[T]: Int = inline erasedValue[T] match {
     case _: Matrix3x3[t] => 9*sizeOf[t]
     // TODO - SizedArray opaque type...
     case _: (a *: b) => sizeOf[a]+sizeOf[b]
-    case _: Product => implicit match {
-        case m: Mirror.ProductOf[T] => sizeOf[m.MirroredElemTypes]
+    case _: Product => summonFrom {
+        case given m: Mirror.ProductOf[T] => sizeOf[m.MirroredElemTypes]
         case _ => compiletime.error("Product is not plain-old-data, cannot compute the type.")
     }
     // Note: Unit shows up when we decompose tuples with *:
@@ -146,8 +146,8 @@ inline def vaoAttributes[T]: Array[VaoAttribute] = {
                                   attr[c](2, stride, sizeOf[a]+sizeOf[b]),
                                   attr[d](3, stride, sizeOf[a]+sizeOf[b]+sizeOf[c]))
     case _: Product =>
-      delegate match {
-        case m: Mirror.ProductOf[T] => vaoAttributes[m.MirroredElemTypes]
+      summonFrom {
+        case given m: Mirror.ProductOf[T] => vaoAttributes[m.MirroredElemTypes]
       }
     case _ => compiletime.error("Cannot compute the VAO attributes of this type.")
   }

@@ -71,7 +71,7 @@ object ActiveTextures {
 private class SimpleActiveTextures(maxIndex: Int) extends ActiveTextures {
     private var depth: Int = 0
     private val MaxDepth = 100
-    private val used: ArrayBuffer[Int] = (0 until maxIndex).map(_ => 100).to[ArrayBuffer]
+    private val used: ArrayBuffer[Int] = (0 until maxIndex).map(_ => 100).to(ArrayBuffer)
     /** Create a new "record" of what textures were used. */
     def push(): Unit = depth = Math.max(MaxDepth, depth+1)
     /** Open up all textures for usage from the last "pop" */

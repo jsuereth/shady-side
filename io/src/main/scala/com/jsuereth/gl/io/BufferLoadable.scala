@@ -19,7 +19,7 @@ package io
 
 
 import java.nio.ByteBuffer
-import scala.compiletime.erasedValue
+import scala.compiletime.{erasedValue,summonFrom}
 
 /** 
  * Loads a value into a byte buffer. 
@@ -31,10 +31,9 @@ trait BufferLoadable[T] {
 }
 object BufferLoadable {
     import deriving._
-    import scala.compiletime.Shape._
 
     /* A quick and dirty mechanism to derive loading product-types into a buffer. */
-    inline def derived[A] given (m: Mirror.Of[A]): BufferLoadable[A] = new BufferLoadable[A] {
+    inline def derived[A](given m: Mirror.Of[A]): BufferLoadable[A] = new BufferLoadable[A] {
         def load(v: A, buf: ByteBuffer): Unit = {
             inline m match {
                 case m: Mirror.ProductOf[A] =>  writeElems[m.MirroredElemTypes](buf, v, 0)
@@ -52,42 +51,42 @@ object BufferLoadable {
       }
     // Looks up the implicit a buffer loadable for a given type.
     inline def loadInl[A](value: A, buf: ByteBuffer): Unit = 
-      delegate match {
+      summonFrom {
         case loader: BufferLoadable[A] => loader.load(value,buf)
       }
 
     // Defines all the buffer loading for primitives.
     // TODO - figure out if we can autogenerate this or clean it up in otherways.
-    given as BufferLoadable[Float] {
+    given BufferLoadable[Float] {
         def load(value: Float, buf: ByteBuffer): Unit =
           buf.putFloat(value)
     }
-    given as BufferLoadable[Double] {
+    given BufferLoadable[Double] {
         def load(value: Double, buf: ByteBuffer): Unit =
           buf.putDouble(value)
     }
-    given as BufferLoadable[Boolean] {
+    given BufferLoadable[Boolean] {
         def load(value: Boolean, buf: ByteBuffer): Unit =
           buf.put(if(value) 1.toByte else 0.toByte)
     }
-    given as BufferLoadable[Byte] {
+    given BufferLoadable[Byte] {
         def load(value: Byte, buf: ByteBuffer): Unit =
           buf.put(value)
     }
-    given as BufferLoadable[Short] {
+    given BufferLoadable[Short] {
         def load(value: Short, buf: ByteBuffer): Unit =
           buf.putShort(value)
     }
-    given as BufferLoadable[Int] {
+    given BufferLoadable[Int] {
         def load(value: Int, buf: ByteBuffer): Unit =
           buf.putInt(value)
     }
-    given as BufferLoadable[Long] {
+    given BufferLoadable[Long] {
         def load(value: Long, buf: ByteBuffer): Unit =
           buf.putLong(value)
     }
 
-    given [T] as BufferLoadable[Seq[T]] given BufferLoadable[T] {
+    given [T](given BufferLoadable[T]): BufferLoadable[Seq[T]] {
         def load(value: Seq[T], buf: ByteBuffer): Unit = {
             val i = value.iterator
             while(i.hasNext) {
@@ -97,23 +96,23 @@ object BufferLoadable {
     }
 
   import com.jsuereth.gl.math._
-  given [T] as BufferLoadable[Matrix3x3[T]] given io.BufferLoadable[T] {
+  given [T](given io.BufferLoadable[T]): BufferLoadable[Matrix3x3[T]] {
     def load(value: Matrix3x3[T], buf: java.nio.ByteBuffer): Unit = {
       buf.loadArray(value.values, 9, 0)
     }
   }
-  given [T] as BufferLoadable[Matrix4x4[T]] given io.BufferLoadable[T] {
+  given [T](given io.BufferLoadable[T]): BufferLoadable[Matrix4x4[T]] {
     def load(value: Matrix4x4[T], buf: java.nio.ByteBuffer): Unit = {
       buf.loadArray(value.values, 16, 0)
     }
   }
-  given [T] as BufferLoadable[Vec2[T]] given io.BufferLoadable[T] {
+  given [T](given io.BufferLoadable[T]): BufferLoadable[Vec2[T]] {
     def load(value: Vec2[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
     }
   }
-  given [T] as BufferLoadable[Vec4[T]] given io.BufferLoadable[T] {
+  given [T](given io.BufferLoadable[T]): BufferLoadable[Vec4[T]] {
     def load(value: Vec4[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
@@ -121,7 +120,7 @@ object BufferLoadable {
       buf.load(value.w)
     }
   }
-  given [T] as BufferLoadable[Vec3[T]] given io.BufferLoadable[T] {
+  given [T](given io.BufferLoadable[T]): BufferLoadable[Vec3[T]] {
     def load(value: Vec3[T], buf: java.nio.ByteBuffer): Unit = {
       buf.load(value.x)
       buf.load(value.y)
@@ -133,13 +132,13 @@ object BufferLoadable {
  * Extension method for ByteBuffer. 
  * Allows calling 'load' on non-primitive types.
  */
-def (buf: ByteBuffer) load[T](value: T) given (loader: BufferLoadable[T]): Unit = loader.load(value, buf)
+def (buf: ByteBuffer) load[T](value: T)(given loader: BufferLoadable[T]): Unit = loader.load(value, buf)
 
 /** 
  * Extension method for ByteBuffer. 
  * Allows calling 'load' for partial array values.
  */
-def (buf: ByteBuffer) loadArray[T](value: Array[T], length: Int, offset: Int) given (loader: BufferLoadable[T]): Unit = {
+def (buf: ByteBuffer) loadArray[T](value: Array[T], length: Int, offset: Int)(given loader: BufferLoadable[T]): Unit = {
   for (i <- offset until (length+offset) if i < value.length)
     loader.load(value(i), buf)
 }
@@ -149,7 +148,7 @@ import org.lwjgl.system.MemoryStack
  * Loads a buffer with the given data, flips it for reading and passes it to the lambda.
  * Cleans up memory when done.
  */
-inline def withLoadedBuf[T : BufferLoadable, A](value: Seq[T])(f: ByteBuffer => A) given MemoryStack: A = {
+inline def withLoadedBuf[T : BufferLoadable, A](value: Seq[T])(f: ByteBuffer => A)(given MemoryStack): A = {
     val size = sizeOf[T]*value.length
     withByteBuffer(size) { buf =>
       buf.clear()

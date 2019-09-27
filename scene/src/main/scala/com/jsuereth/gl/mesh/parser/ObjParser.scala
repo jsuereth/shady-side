@@ -115,13 +115,13 @@ class ObjMeshParser() {
   def obj: ObjParsedMesh = {
     // TODO - Clean up imported objects.
     // Convert all quad faces into triangles
-    val fixedFaces: Seq[TriangleFace] = faces flatMap {
+    val fixedFaces: Seq[TriangleFace] = faces.flatMap {
       case x: TriangleFace => Seq(x)
       case QuadFace(one,two,three,four) => Seq(TriangleFace(one,two,three), TriangleFace(three, four, one))
-    }
+    }.toSeq
     // Generate normals if needed, update faces.
     val faces2 = if (normals.isEmpty) generateNormals(fixedFaces) else fixedFaces
-    ObjParsedMesh(vertices, normals, textureCoords, faces2)
+    ObjParsedMesh(vertices.toSeq, normals.toSeq, textureCoords.toSeq, faces2.toSeq)
   }
 
   private def generateNormals(faces: Seq[TriangleFace]): Seq[TriangleFace] = {
