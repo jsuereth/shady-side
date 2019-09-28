@@ -20,7 +20,7 @@ def commonSettings: Seq[Setting[_]] = Seq(
     startYear := Some(2019),
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     organization := "com.jsuereth.shadyside",
-    version := "0.1.0",
+    git.baseVersion := "0.1",
     scalaVersion := dottyVersion,
     licenseReportTitle := "third_party_licenses",
     licenseReportDir := baseDirectory.value / "third_party",
@@ -35,26 +35,26 @@ def commonSettings: Seq[Setting[_]] = Seq(
 
 // Our linear algebra library.  Should NOT depend on OpenGL in any way.
 // TODO - sbt-jmh showing off how bad we are at fast math.
-val math = project.settings(commonSettings:_*)
+val math = project.settings(commonSettings:_*).enablePlugins(GitVersioning)
 // Our library for passing data into/out of OpenGL.
 // This is meant to abstract over Plain-old-data classes and make it seamless
 // to shove mat4's, vec3's, VAOs and Samplers (texture buffers) around.
 val io = project.dependsOn(math).settings(commonSettings:_*).settings(
     libraryDependencies += lwjgl("lwjgl"),
     libraryDependencies += lwjgl("lwjgl-opengl")
-)
+).enablePlugins(GitVersioning)
 
 // The shader DSL.
 val shader = project.dependsOn(math, io).settings(commonSettings:_*).settings(
     libraryDependencies += lwjgl("lwjgl"),
     libraryDependencies += lwjgl("lwjgl-opengl")
-)
+).enablePlugins(GitVersioning)
 
 // A scene-graph library built on all the other components.   Used mostly
 // so we can demonstrate each bit.
 val scene = project.dependsOn(math, io).settings(commonSettings:_*).settings(
     libraryDependencies += lwjgl("lwjgl")
-)
+).enablePlugins(GitVersioning)
 
 // An example project that renders a scene with a cartoon shader.
 val example = project.dependsOn(shader, scene).settings(commonSettings:_*).settings(
@@ -66,4 +66,4 @@ val example = project.dependsOn(shader, scene).settings(commonSettings:_*).setti
     libraryDependencies += lwjglNative("lwjgl-opengl"),
     // Yay for this silently failing unpickling.
     libraryDependencies += findBugs % "provided"
-)
+).enablePlugins(GitVersioning)
