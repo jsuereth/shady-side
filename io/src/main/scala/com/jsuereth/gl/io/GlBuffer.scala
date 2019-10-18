@@ -25,11 +25,10 @@ trait GLBuffer extends AutoCloseable {
     /* The ID of the buffer object.  This makes no sense to use unless you know the type of buffer (FBO/VBO). */
     def id: Int
     // all instances should have an inline "with"
-    inline def withBound[A](f: => A): A = {
+    inline def withBound[A](f: => A): A =
       bind()
       try f
       finally unbind()
-    }
     /** Binds the buffer to be used. */
     def bind(): Unit
     /** Unbinds the buffer. */

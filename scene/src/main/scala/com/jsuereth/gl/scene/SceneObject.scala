@@ -25,7 +25,7 @@ import math._
  *
  * TODO - define as enum?
  */
-trait SceneObject {
+trait SceneObject
   /** The mesh representing this object. */
   def mesh: Mesh3d
   /** The current position of hte object. */
@@ -37,7 +37,6 @@ trait SceneObject {
   /** Returns the current model-matrix we can use to render this scene object. */
   def modelMatrix: Matrix4[Float] =
     Matrix4.translate[Float](pos.x, pos.y, pos.z) * orientation.toMatrix * Matrix4.scale(scale.x, scale.y, scale.z)
-}
 /**
  * A static, unomving object within the scene.
  */

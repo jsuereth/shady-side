@@ -42,50 +42,43 @@ class Camera {
   
   def reset(  eye: Vec3[Float] = Vec3(-0.5f, 5.0f, -0.5f), 
                up: Vec3[Float] = Vec3(0.0f, 1.0f, 0.0f), 
-            focus: Vec3[Float] = Vec3(0.0f, 0.0f, 0.0f)): Unit = {
+            focus: Vec3[Float] = Vec3(0.0f, 0.0f, 0.0f)): Unit =
     this.eye = eye
     this.up = up
     this.focus = focus
-  }
   
-  def moveRight(amount: Float): Unit = {
+  def moveRight(amount: Float): Unit =
     val mover = rightDirection * amount
     eye += mover
     focus += mover
     println(this)
-  }
   
-  def turnRight(amount: Float): Unit = {
+  def turnRight(amount: Float): Unit =
     val rot = Quaternion.rotation(-amount, up)
     focus = eye + (rot * (focus-eye))
     println(this)
-  }
   
-  def turnUp(amount: Float): Unit = {
+  def turnUp(amount: Float): Unit =
     val rot = Quaternion.rotation(amount, rightDirection)
     focus = eye + (rot * (focus-eye))
     println(this)
-  }
   
   
-  def moveForward(amount: Float): Unit = {
+  def moveForward(amount: Float): Unit =
     val mover = lookDirection * amount
     focus += mover
     eye += mover
     println(this)
-  }
   
-  def moveUp(amount: Float): Unit = {
+  def moveUp(amount: Float): Unit =
     val mover = up * amount
     eye += mover
     focus += mover
     println(this)
-  }
   
-  def zoom(amount: Float): Unit = {
+  def zoom(amount: Float): Unit =
     // TODO - Scale this differently...
     focus = focus + (lookDirection * amount)
-  }
   
   def viewMatrix: Matrix4x4[Float] = Matrix4.lookAt(focus, eye, up)
   

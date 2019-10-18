@@ -20,7 +20,7 @@ package math
 import scala.math.Numeric
 import scala.reflect.ClassTag
 
-final class Vec4[T : ClassTag](private[this] val values: Array[T]) {
+final class Vec4[T : ClassTag](private[this] val values: Array[T])
   def x: T = values(0)
   def y: T = values(1)
   def z: T = values(2)
@@ -48,14 +48,11 @@ final class Vec4[T : ClassTag](private[this] val values: Array[T]) {
   def length(given Rootable[T], Numeric[T]): T =  sqrt(lengthSquared)
 
   /** Normalizes this vector (setting distance to 1).  Note:  This requires a valid SQRT function. */
-  def normalize(given Fractional[T], Rootable[T]): Vec4[T] = {
+  def normalize(given Fractional[T], Rootable[T]): Vec4[T] =
     val l = length
     new Vec4[T](Array((x / l), (y / l), (y / l), (w / l)))
-  }
   override def toString: String = s"($x, $y, $z, $w)"
-}
-object Vec4 {
+object Vec4
   def apply[T: ClassTag](x: T, y: T, z: T, w: T): Vec4[T] = new Vec4[T](Array(x,y,z, w))
   def apply[T: ClassTag](xy: Vec2[T], z: T, w: T): Vec4[T] = new Vec4[T](Array(xy.x, xy.y, z, w))
   def apply[T: ClassTag](xyz: Vec3[T], w: T): Vec4[T] = new Vec4[T](Array(xyz.x, xyz.y, xyz.z, w))
-}

@@ -47,7 +47,7 @@ import java.nio.ByteBuffer
  * The object stores vertex data of type VertexType.  The layout
  * is determined via the {{vaoAttributes[VertexType]}} method.
  */
-trait VertexArrayObject[VertexType] extends GLBuffer {
+trait VertexArrayObject[VertexType] extends GLBuffer
     /** Binds this VAO for usage. */
     def bind(): Unit = glBindVertexArray(id)
     /** Removes this VAO from being used. */
@@ -57,8 +57,7 @@ trait VertexArrayObject[VertexType] extends GLBuffer {
 
     // TODO - Clean VBOs?
     override def close(): Unit = glDeleteVertexArrays(id)
-}
-object VertexArrayObject {
+object VertexArrayObject
     /** Loads a VAO whose elements will align with the passed in type.
      *  @tparam T the plain-old-data type (case class) where each member becomes one of the vertex attribute pointers in this VAO.
      *  @param vertices A sequence of all the verticies to load into graphics memory.
@@ -66,7 +65,7 @@ object VertexArrayObject {
      *
      *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(given MemoryStack): VertexArrayObject[T] = {
+    inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(given MemoryStack): VertexArrayObject[T] =
         val id = glGenVertexArrays()
         glBindVertexArray(id)
         val attrs: Array[VaoAttribute] = vaoAttributes[T]
@@ -80,14 +79,13 @@ object VertexArrayObject {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndex)
         withLoadedBuf(indices)(glBufferData(GL_ELEMENT_ARRAY_BUFFER, _, GL_STATIC_DRAW))
         IndexedVertexArrayObject(id, attrs, indices.size)
-    }
     /** Loads a VAO whose elements will align with the passed in type.
      *  @tparam T the plain-old-data type (case class) where each member becomes one of the vertex attribute pointers in this VAO.
      *  @param vertices A sequence of all the verticies to load into graphics memory.
      *
      *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(given MemoryStack): VertexArrayObject[T] = {
+    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(given MemoryStack): VertexArrayObject[T] =
         val id = glGenVertexArrays()
         val vertByteSize = sizeOf[T]*vertices.size
         val attrs = vaoAttributes[T]
@@ -97,19 +95,16 @@ object VertexArrayObject {
         withLoadedBuf(vertices)(glBufferData(GL_ARRAY_BUFFER, _, GL_STATIC_DRAW))
         attrs.foreach(_.define())
         RawVertexArrayObject(id, attrs, vertices.size)
-    }
-}
 /** This class can render a VAO where vertex data is rendered in order. */
 class RawVertexArrayObject[VertexType](override val id: Int, 
                                     attrs: Array[VaoAttribute], 
                                     vertexCount: Int,
-                                    drawMode: Int = GL_TRIANGLES) extends VertexArrayObject[VertexType] {
+                                    drawMode: Int = GL_TRIANGLES) extends VertexArrayObject[VertexType]
   def draw(): Unit = withBound {
     attrs.iterator.map(_.idx).foreach(glEnableVertexAttribArray(_))  
     glDrawArrays(drawMode, 0, vertexCount)
   }
   override def close(): Unit = glDeleteVertexArrays(id)
-}
 
 /** This class can render a VAO where you load vertex data separately from index data. */
 class IndexedVertexArrayObject[VertexType](override val id: Int,

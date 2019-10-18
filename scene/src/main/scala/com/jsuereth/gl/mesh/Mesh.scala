@@ -29,16 +29,13 @@ case class MeshPoint(
 object MeshPoint
 
 // TODO - make this an enum
-sealed trait Face {
+sealed trait Face
   def vertices: Seq[FaceIndex]
-}
 /** Represents a triangle defined as an index-reference into a Mesh3d. */
-final case class TriangleFace(one: FaceIndex, two: FaceIndex, three: FaceIndex) extends Face {
+final case class TriangleFace(one: FaceIndex, two: FaceIndex, three: FaceIndex) extends Face
   override def vertices: Seq[FaceIndex] = Seq(one,two,three)
-}
-final case class QuadFace(one: FaceIndex, two: FaceIndex, three: FaceIndex, four: FaceIndex) extends Face {
+final case class QuadFace(one: FaceIndex, two: FaceIndex, three: FaceIndex, four: FaceIndex) extends Face
   override def vertices: Seq[FaceIndex] = Seq(one,two,three,four)
-}
 /** Index reference into a Mesh3d for a face-definition. */
 final case class FaceIndex(vertix: Int, texture: Int, normal: Int)
 
@@ -48,7 +45,7 @@ final case class FaceIndex(vertix: Int, texture: Int, normal: Int)
  * - This needs a LOT of cleanup.  We should not blindly take in OBJ format and use it, we should clean it before
  *   creating this data structure.
  */
-trait Mesh3d {
+trait Mesh3d
     /** The verticies on this mesh. */
     def vertices: Seq[Vec3[Float]]
     /** The normals. */
@@ -61,40 +58,35 @@ trait Mesh3d {
     /** A flattening of indicies to those of the vertex. */
     private def allIndicies: Seq[FaceIndex] = faces.flatMap(_.vertices).distinct.toSeq
     /** Expensive to compute mechanism of lining up shared vertex/normal/texel coordinates. */
-    private def points: Seq[MeshPoint] = {
-      for(faceIdx <- allIndicies) yield {
+    private def points: Seq[MeshPoint] =
+      for faceIdx <- allIndicies yield
           val vertex = vertices(faceIdx.vertix - 1)
           val normal = 
-            if(faceIdx.normal == 0) Vec3(0.0f,0.0f,0.0f)
+            if faceIdx.normal == 0 then Vec3(0.0f,0.0f,0.0f)
             else normals(faceIdx.normal - 1)
           val texture = 
-            if (faceIdx.texture == 0) Vec2(0f,0f)
+            if faceIdx.texture == 0 then Vec2(0f,0f)
             else textureCoords(faceIdx.texture - 1)
           MeshPoint(vertex,normal,texture)
-        }
-    }
     // TODO - don't keep indicies in such a wierd format...
-    private def idxes: Seq[Int] = {
+    private def idxes: Seq[Int] =
       val indexMap = allIndicies.zipWithIndex.toMap
-      for {
+      for
         face <- faces
         v <- face.vertices
         idx <- indexMap get v
-      } yield idx
-    }
+      yield idx
 
     // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
     /** Loads this mesh into a VAO that can be rendered. */
-    def loadVao(given MemoryStack): VertexArrayObject[MeshPoint] = {
+    def loadVao(given MemoryStack): VertexArrayObject[MeshPoint] =
       // TODO - Figure out if triangles or quads.
       VertexArrayObject.loadWithIndex(points, idxes)
-    }
-}
 
-object Mesh3d {
+object Mesh3d
   private val oneThird = 1.0f / 3.0f
   /** Calculate the centroid (assuming equal weight on points). */
-  def centroid(mesh: Mesh3d): Vec3[Float] = {
+  def centroid(mesh: Mesh3d): Vec3[Float] =
     // Algorithm
     // C = Centroid <vector>, A = (area of a face * 2)
     // R = face centroid = average of vertices making the face <vector>
@@ -103,7 +95,7 @@ object Mesh3d {
     var sumAreaTimesFaceCentroidY = 0f
     var sumAreaTimesFaceCentroidZ = 9f
     var sumArea = 0.0f
-      for (face <- mesh.faces) {
+      for face <- mesh.faces do
         val TriangleFace(fone, ftwo, fthree) = face
         val one = mesh.vertices(fone.vertix-1)
         val two = mesh.vertices(ftwo.vertix-1)
@@ -119,12 +111,9 @@ object Mesh3d {
         sumAreaTimesFaceCentroidY += (y * area)
         val z = (one.z + two.z + three.z) * oneThird
         sumAreaTimesFaceCentroidZ += (z * area)
-      }
     val x = sumAreaTimesFaceCentroidX / sumArea
     val y = sumAreaTimesFaceCentroidY / sumArea
     val z = sumAreaTimesFaceCentroidZ / sumArea
     Vec3(x, y, z)
-  }
   // TODO - Normalize on centroid...
-}
 

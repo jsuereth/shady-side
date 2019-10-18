@@ -24,7 +24,7 @@ type Matrix4[T] = Matrix4x4[T]
 val Matrix4 = Matrix4x4
 
 /** A matrix library for floating point values, meant to be relatively efficient and the analog of GLSL matrix. */
-class Matrix4x4[T : ClassTag](val values: Array[T]) {
+class Matrix4x4[T : ClassTag](val values: Array[T])
   // row-column formats
   def m11: T = values(0)
   def m21: T = values(1)
@@ -50,31 +50,29 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
   def *(scale: T)(given Numeric[T]): Matrix4x4[T] =
     Matrix4x4(values map (_ * scale))
 
-  def *(point: Vec4[T])(given Numeric[T]): Vec4[T] = {
+  def *(point: Vec4[T])(given Numeric[T]): Vec4[T] =
     import point.{x,y,z,w}
     val newX = m11*x + m12*y + m13*z + m14*w
     val newY = m21*x + m22*y + m23*z + m24*w
     val newZ = m31*x + m32*y + m33*z + m34*w
     val newW = m41*x + m42*y + m43*z + m44*w
     Vec4(newX, newY, newZ, newW)
-  }
 
-  def *(other: Matrix4x4[T])(given Numeric[T]): Matrix4x4[T] = {
+  def *(other: Matrix4x4[T])(given Numeric[T]): Matrix4x4[T] =
     // TODO - attempt to use Coppersmith–Winograd algorithm?
     // For now we do this naively, which is possibly more efficeint.
     val next = new Array[T](16)
     def idx(row: Int, col: Int): Int = row + (col*4)
     // TODO - Should we unroll this?
-    for {
+    for
       i <- 0 until 4
       j <- 0 until 4
-    } next(idx(i,j)) = (for {
+    do next(idx(i,j)) = (for
       k <- 0 until 4
-    } yield apply(i)(k) * other(k)(j)).sum
+    yield apply(i)(k) * other(k)(j)).sum
     Matrix4x4(next)
-  }
 
-  def determinant(given Numeric[T]): T = {
+  def determinant(given Numeric[T]): T =
     // TODO - Use a better decomposition to compute the inverse!
     (m14*m23*m32*m41) - (m13*m24*m32*m41) - (m14*m22*m33*m41) + (m12*m24*m33*m41) +
       (m13*m22*m34*m41) - (m12*m23*m34*m41) - (m14*m23*m31*m42) + (m13*m24*m31*m42) +
@@ -82,16 +80,14 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
       (m14*m22*m31*m43) - (m12*m24*m31*m43) - (m14*m21*m32*m43) + (m11*m24*m32*m43) +
       (m12*m21*m34*m43) - (m11*m22*m34*m43) - (m13*m22*m31*m44) + (m12*m23*m31*m44) +
       (m13*m21*m32*m44) - (m11*m23*m32*m44) - (m12*m21*m33*m44) + (m11*m22*m33*m44)
-  }
-  def transpose: Matrix4x4[T] = {
+  def transpose: Matrix4x4[T] =
     new Matrix4x4[T](Array(
       m11, m12, m13, m14,
       m21, m22, m23, m24,
       m31, m32, m33, m34,
       m41, m42, m43, m44
     ))
-  }
-  def inverse(given Fractional[T]): Matrix4x4[T] = {
+  def inverse(given Fractional[T]): Matrix4x4[T] =
     // Stack overflow when we had 1.0f / determinant.
     val scale: T = summon[Fractional[T]].one / determinant
     // TODO - use a better decomposition to compute the inverse!
@@ -118,22 +114,19 @@ class Matrix4x4[T : ClassTag](val values: Array[T]) {
       n13*scale, n23*scale, n33*scale, n43*scale,
       n14*scale, n24*scale, n34*scale, n44*scale
     ))
-  }
 
   def toMat3x3: Matrix3x3[T] =
     Matrix3x3(Array(m11, m21, m31, 
                     m12, m22, m32, 
                     m13, m23, m33))
 
-  override def toString: String = {
+  override def toString: String =
     def f(t: T): String = t.toString     // TODO - use fixed-format number width...
     s""":|${f(m11)}|${f(m12)}|${f(m13)}|${f(m14)}|
         :|${f(m21)}|${f(m22)}|${f(m23)}|${f(m24)}|
         :|${f(m31)}|${f(m32)}|${f(m33)}|${f(m34)}|
         :|${f(m41)}|${f(m42)}|${f(m43)}|${f(m44)}|""".stripMargin(':')
-  }
-}
-object Matrix4x4 {
+object Matrix4x4
 
   def identity[T: ClassTag : Numeric]: Matrix4x4[T] =
     new Matrix4x4(Array(
@@ -169,7 +162,7 @@ object Matrix4x4 {
   /**
     * Creates a rotation matrix around the x axis
     */
-  def rotateX[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] = {
+  def rotateX[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] =
     val r = angleToRadians(angle)
     Matrix4(Array(
       one,  zero,   zero,    zero,
@@ -177,10 +170,9 @@ object Matrix4x4 {
       zero, sin(r), cos(r),  zero,
       zero, zero,   zero,    one
     ))
-  }
 
   /** Creates a rotation matrix around the y axis */
-  def rotateY[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] = {
+  def rotateY[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] =
     val r = angleToRadians(angle)
     Matrix4(Array(
       cos(r),  zero, sin(r), zero,
@@ -188,9 +180,8 @@ object Matrix4x4 {
       -sin(r), zero, cos(r), zero,
       zero,    zero, zero,   one
     ))
-  }
   /** Creates a rotations matrix around the z axis */
-  def rotateZ[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] = {
+  def rotateZ[T: ClassTag : Trigonometry : Numeric](angle: T): Matrix4[T] =
     val r = angleToRadians(angle)
     Matrix4(Array(
       cos(r), -sin(r), zero, zero,
@@ -198,7 +189,6 @@ object Matrix4x4 {
       zero,   zero,    one,  zero,
       zero,   zero,    zero, one
     ))
-  }
 
   /** 
    * Creates a 'view' matrix for a given eye. 
@@ -207,7 +197,7 @@ object Matrix4x4 {
    * @param eye The location of the eye.
    * @param up The direction of up according to the eye.
    */
-  def lookAt[T: ClassTag : Rootable : Fractional](at: Vec3[T], eye: Vec3[T], up: Vec3[T]): Matrix4[T] = {
+  def lookAt[T: ClassTag : Rootable : Fractional](at: Vec3[T], eye: Vec3[T], up: Vec3[T]): Matrix4[T] =
     val zaxis = (at - eye).normalize          // L  = C - E
     val xaxis = (zaxis cross up).normalize    // S  = L x U
     val yaxis = (xaxis cross zaxis).normalize // U' = S x L
@@ -218,7 +208,6 @@ object Matrix4x4 {
       xaxis.z, yaxis.z, -zaxis.z,  zero,  // (-L, 0)
       zero,    zero,    zero,      one    // (-E, 1)
     )) * Matrix4x4.translate[T](-eye.x, -eye.y, -eye.z)
-  }
   /**
    * Creates a perspective projection matrix.
    * Based on gluPerspective.
@@ -228,7 +217,7 @@ object Matrix4x4 {
    * @param zNear - distance from viewer to near clipping plane
    * @param zFar - distance from viewer to far clipping plane.
    */
-  def perspective[T : ClassTag : Trigonometry : Fractional](fovy: T, aspect: T, zNear: T, zFar: T): Matrix4x4[T] = {
+  def perspective[T : ClassTag : Trigonometry : Fractional](fovy: T, aspect: T, zNear: T, zFar: T): Matrix4x4[T] =
     val f = (one / tan(angleToRadians(fovy / two)))
     val z = (zFar + zNear) / (zNear - zFar)
     val zFixer = (two*zFar*zNear)/(zNear - zFar)
@@ -238,7 +227,6 @@ object Matrix4x4 {
       zero,     zero, z,     zFixer,
       zero,     zero, -one,  zero
     ))
-  }
 
   /**
    * Creates an orthographic projection matrix.
@@ -250,7 +238,7 @@ object Matrix4x4 {
    * @param near The near clipping plane (z)
    * @param far The far clipping plane (z)
    */
-  def ortho[T : ClassTag : Fractional](left: T, right: T, bottom: T, top: T, near: T, far: T): Matrix4[T] = {
+  def ortho[T : ClassTag : Fractional](left: T, right: T, bottom: T, top: T, near: T, far: T): Matrix4[T] =
     val a = two / (right - left)
     val b = two / (top - bottom)
     val c = -two / (far - near)
@@ -264,8 +252,6 @@ object Matrix4x4 {
       zero,  b,    zero, ty,
       zero,  zero, c,    tz,
       zero,  zero, zero, one))
-  }
-}
 
 
 

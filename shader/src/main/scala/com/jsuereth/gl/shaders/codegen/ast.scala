@@ -16,7 +16,7 @@
 
 package com.jsuereth.gl.shaders.codegen
 
-case class Ast(decls: Seq[Declaration], version: String = "300 es") {
+case class Ast(decls: Seq[Declaration], version: String = "300 es")
   // TODO - which version ddo we target?
   // TODO - Allow specifying default precision for opengl ES
   def toProgramString: String = 
@@ -28,11 +28,10 @@ case class Ast(decls: Seq[Declaration], version: String = "300 es") {
         |
         |${decls.map(_.toProgramString).mkString("\n")}""".stripMargin('|')
     //s"${decls.map(_.toProgramString).mkString("\n")}"
-}
 
 // TODO - a better encoding of variables from GLSL
 /** Declarations available in GLSL at the top-level. */
-enum Declaration {
+enum Declaration
   case Uniform(name: String, tpe: String)
   // TODO - better layout controls
   case Input(name: String, tpe: String, location: Option[Int] = None)
@@ -42,7 +41,7 @@ enum Declaration {
   /** The definitiion of a struct. */
   case Struct(name: String, members: Seq[StructMember])
 
-  def toProgramString: String = this match {
+  def toProgramString: String = this match
     case Uniform(name, tpe) => s"uniform $tpe $name;"
     case Input(name, tpe, Some(location)) => s"layout (location = $location) in $tpe $name;"
     case Input(name, tpe, None) => s"in $tpe $name;"
@@ -50,28 +49,23 @@ enum Declaration {
     case Output(name, tpe, None) => s"out $tpe $name;"
     case Method(name, tpe, block) => s"$tpe $name() {\n  ${block.map(_.toProgramString).mkString("\n  ")}\n}"
     case Struct(name, members) => s"struct $name {\n  ${members.map(_.toProgramString).mkString("\n  ")}\n};"
-  }
-}
 
 /** A member of a structure. */
-case class StructMember(name: String, tpe: String) {
+case class StructMember(name: String, tpe: String)
   def toProgramString: String = s"$tpe $name;"
-}
 
 /** Statements in the GLSL language. */
-enum Statement {
+enum Statement
   case LocalVariable(name: String, tpe: String, initialValue: Option[Expr])
   case Effect(expr: Expr)
   case Assign(ref: String, value: Expr)
 
-  def toProgramString: String = this match {
+  def toProgramString: String = this match
     // Here is a hack to remove empty statements we use as placehoders....
     case Effect(expr) => s"${expr.toProgramString};"
     case LocalVariable(name, tpe, None) => s"$tpe $name;"
     case LocalVariable(name, tpe, Some(expr)) => s"$tpe $name = ${expr.toProgramString};"
     case Assign(ref, value) => s"$ref = ${value.toProgramString};"
-  }
-}
 
 // TODO - encode the valid range of expressions in GLSL
 /** Valid expressions (rvalues) in GLSL */
@@ -84,12 +78,11 @@ enum Expr {
   case Negate(expr: Expr)
 
 
-  def toProgramString: String = this match {
+  def toProgramString: String = this match
     case MethodCall(name, args) => s"$name(${args.map(_.toProgramString).mkString("", ",", "")})"
     case Id(name) => name
     case Operator(name, lhs, rhs) => s"(${lhs.toProgramString} $name ${rhs.toProgramString})"
     case Negate(expr) => s"-(${expr.toProgramString})"
     case Terenary(cond, lhs, rhs) => s"(${cond.toProgramString}) ? (${lhs.toProgramString}) : (${rhs.toProgramString})"
     case Select(lhs, rhs) => s"(${lhs.toProgramString}).$rhs"
-  }
 }

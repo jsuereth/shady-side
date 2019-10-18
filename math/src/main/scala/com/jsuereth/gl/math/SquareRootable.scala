@@ -23,28 +23,24 @@ package com.jsuereth.gl.math
  *  - sqrt(value) // root(value,2)
  *  - pow(n, value) // n^value
  */ 
-trait Rootable[T] {
+trait Rootable[T]
   /** Computes the arbitrary root of a value. pow(root(value, base), base) == value */
   def root(value: T, base: T): T
   /** Computes the square root of a value. */
   def sqrt(value: T): T
   /** Exponential multiplication.  base^exp. */
   def pow(base: T, exp: T): T
-}
-object Rootable {
-  given Rootable[Float] {
+object Rootable
+  given Rootable[Float]
     // Approximation for arbitrary roots.
     def root(value: Float, base: Float): Float = pow(value, 1f / base)
     def sqrt(value: Float): Float = Math.sqrt(value.toDouble).toFloat
     def pow(base: Float, exp: Float): Float = Math.pow(base.toDouble, exp.toDouble).toFloat
-  }
-  given Rootable[Double] {
+  given Rootable[Double]
     // Approximation for arbitrary roots.
     def root(value: Double, base: Double): Double = Math.pow(Math.E, Math.log(base) / value.toDouble)
     def sqrt(value: Double): Double = Math.sqrt(value)
     def pow(base: Double, exp: Double): Double = Math.pow(base, exp)
-  }
-}
 
 /** package-level method to compute sqrt on any type that's Rootable. */
 def sqrt[T](value: T)(given r: Rootable[T]): T = r.sqrt(value)

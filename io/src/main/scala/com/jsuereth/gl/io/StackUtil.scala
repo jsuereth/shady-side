@@ -27,28 +27,25 @@ import java.nio.{
 }
 
 /** Ensures there is a memory stack available for an operation, popping the stack when complete. */
-inline def withMemoryStack[A](f: (given MemoryStack) => A): A = {
+inline def withMemoryStack[A](f: (given MemoryStack) => A): A =
   val stack = org.lwjgl.system.MemoryStack.stackPush()
   try f(given stack)
   finally stack.pop()
-}
 /** Allocates a byte buffer.  Will allocate on the stack, if small enough, otherwise in off-heap memory. */
 inline def withByteBuffer[A](size: Int)(f: ByteBuffer => A)(given stack: MemoryStack): A = 
-  if (size < 4096) f(stack.calloc(size))
-  else {
+  if size < 4096 then f(stack.calloc(size))
+  else
     val buf = MemoryUtil.memAlloc(size)
     try f(buf) finally MemoryUtil.memFree(buf)
-  }
 /** Allocates a float buffer.  Will allocate on the stack, if small enough, otherwise in off-heap memory. */
 inline def withFloatBuffer[A](size: Int)(f: FloatBuffer => A)(given stack: MemoryStack): A = 
-  if (size < 1024) f(stack.callocFloat(size))
-  else {
+  if size < 1024 then f(stack.callocFloat(size))
+  else
     val buf = MemoryUtil.memAllocFloat(size)
     try f(buf) finally MemoryUtil.memFree(buf)
-  }
 /** Allocates an int buffer.  Will allocate on the stack, if small enough, otherwise in off-heap memory. */
 inline def withIntBuffer[A](size: Int)(f: IntBuffer => A)(given stack: MemoryStack): A = 
-  if (size < 1024) f(stack.callocInt(size))
+  if size < 1024 then f(stack.callocInt(size))
   else {
     val buf = MemoryUtil.memAllocInt(size)
     try f(buf) finally MemoryUtil.memFree(buf)

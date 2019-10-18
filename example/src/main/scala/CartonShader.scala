@@ -21,7 +21,7 @@ import com.jsuereth.gl.io.ShaderUniformLoadable
 
 case class WorldData(light: Vec3[Float], eye: Vec3[Float], view: Matrix4[Float], projection: Matrix4[Float]) derives ShaderUniformLoadable
 
-object CartoonShader extends DslShaderProgram {
+object CartoonShader extends DslShaderProgram
   // Hack to get structures to work.  OpenGL spec + reality may not line up on how to look up structure ids.  Need to rethink
   // ShaderUniformLoadable class...
   val world = Uniform[WorldData]()
@@ -51,21 +51,20 @@ object CartoonShader extends DslShaderProgram {
       val H = (L + V).normalize
       val diffuse = materialKd() * lambertian
       val specular =
-        if (lambertian > 0.0f) materialKs() * Math.pow(Math.max(0, H.dot(N)).toFloat, materialShininess()).toFloat
+        if lambertian > 0.0f then materialKs() * Math.pow(Math.max(0, H.dot(N)).toFloat, materialShininess()).toFloat
         else 0.0f
       //Black color if dot product is smaller than 0.3
       //else keep the same colors
-      val edgeDetection = if (V.dot(worldNormal) > 0.3f) 1f else 0.7f
+      val edgeDetection = if V.dot(worldNormal) > 0.3f then 1f else 0.7f
       val texColor = materialKdTexture().texture(texCoord).xyz
       // TODO - add ambient light?
       val light = (((texColor*diffuse) + (texColor*specular)) * edgeDetection)
       Output("color", 0, Vec4(light, 1f))
     }
   }
-}
 
 
-object SimpleShader extends DslShaderProgram {
+object SimpleShader extends DslShaderProgram
   val (vertexShaderCode, fragmentShaderCode) = defineShaders {
       val position = Input[Vec3[Float]](location = 0)
       glPosition(Vec4(position, 1.0f))
@@ -73,4 +72,3 @@ object SimpleShader extends DslShaderProgram {
           Output("color", 0, Vec4(0.0f, 0.5f, 0.5f, 1.0f))
       }
   }
-}

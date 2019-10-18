@@ -38,27 +38,23 @@ import org.lwjgl.opengl.GL14.{
 }
 
 /** Controls how textures wrap in OpenGL. */
-enum TextureWrapType {
+enum TextureWrapType
     case ClampToEdge
     case MirroredRepeat
     case Repeat 
 
-    def toGL: Int = this match {
+    def toGL: Int = this match
         case ClampToEdge => GL_CLAMP
         case MirroredRepeat => GL_MIRRORED_REPEAT
         case Repeat => GL_REPEAT
-    }
-}
 
 /** Controls how we grab pixel values from textures when we don't have 1:1 mapping from point-to-texture coord. */
-enum TextureFilterType {
+enum TextureFilterType
   case Nearest, Linear
   
-  def toGL: Int = this match {
+  def toGL: Int = this match
       case Nearest => GL_NEAREST
       case Linear => GL_LINEAR
-  }
-}
 /** Defines a parameter for an OpenGL texture, as well as the ability to set that parameter. */
 enum TextureParameter {
     case WrapS(tpe: TextureWrapType)
@@ -67,19 +63,17 @@ enum TextureParameter {
     case MinFilter(tpe: TextureFilterType, mipMap: Option[TextureFilterType] = None)
 
     import TextureFilterType.{Nearest,Linear}
-    private def toMipMapTpe(tpe: TextureFilterType, mipMap: TextureFilterType): Int = (tpe, mipMap) match {
+    private def toMipMapTpe(tpe: TextureFilterType, mipMap: TextureFilterType): Int = (tpe, mipMap) match
         case (Nearest, Nearest) => GL_NEAREST_MIPMAP_NEAREST
         case (Nearest, Linear) => GL_NEAREST_MIPMAP_LINEAR
         case (Linear, Linear) => GL_LINEAR_MIPMAP_LINEAR
         case (Linear, Nearest) => GL_LINEAR_MIPMAP_NEAREST
-    }
 
     /** Call the appropriate glTextParameteri() function for this texture parameter. */
-    def set(target: Int = GL_TEXTURE_2D): Unit = this match {
+    def set(target: Int = GL_TEXTURE_2D): Unit = this match
         case WrapS(tpe) => glTexParameteri(target, GL_TEXTURE_WRAP_S, tpe.toGL)
         case WrapT(tpe) => glTexParameteri(target, GL_TEXTURE_WRAP_T, tpe.toGL)
         case MagFilter(tpe) => glTexParameteri(target, GL_TEXTURE_MAG_FILTER, tpe.toGL)
         case MinFilter(tpe, None) => glTexParameteri(target, GL_TEXTURE_MAG_FILTER, tpe.toGL)
         case MinFilter(tpe, Some(m)) => glTexParameteri(target, GL_TEXTURE_MIN_FILTER, toMipMapTpe(tpe, m))
-    }
 } 

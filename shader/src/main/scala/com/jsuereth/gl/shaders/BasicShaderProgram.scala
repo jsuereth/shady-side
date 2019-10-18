@@ -26,53 +26,44 @@ import com.jsuereth.gl.io.{
 }
 import org.lwjgl.system.MemoryStack
 
-enum Shader(val id: Int) {
+enum Shader(val id: Int)
     case Vertex extends Shader(GL20.GL_VERTEX_SHADER)
     case Fragment extends Shader(GL20.GL_FRAGMENT_SHADER)
-}
 
-class ShaderException(msg: String, source: String, cause: Throwable) extends Exception(s"$msg\n\n$source", cause) {
+class ShaderException(msg: String, source: String, cause: Throwable) extends Exception(s"$msg\n\n$source", cause)
     def this(msg: String, source: String) = this(msg, source: String, null)
-}
 
 /** Compiles a shader and returns the id of the shader. */
-def compileShader(shaderType: Shader, source: String): Int = {
+def compileShader(shaderType: Shader, source: String): Int =
     val shader = GL20.glCreateShader(shaderType.id)
-    try {
-        if(shader == 0) throw ShaderException("Unable to construct shader!", source)
+    try
+        if shader == 0 then throw ShaderException("Unable to construct shader!", source)
         GL20.glShaderSource(shader, source)
         GL20.glCompileShader(shader)
-        if(GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+        if GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE then
             throw ShaderException(GL20.glGetShaderInfoLog(shader, 2000), source)
-        }
-    } catch {
+    catch
         case e: Exception =>
-        GL20.glDeleteShader(shader)
-        throw e
-    }
+          GL20.glDeleteShader(shader)
+          throw e
     shader
-}
 /** Creates a shader program and linkes in a set of shaders together. */
-def linkShaders(compiledShaders: Int*): Int = {
+def linkShaders(compiledShaders: Int*): Int =
     val program = GL20.glCreateProgram()
-    try {
-      for (shader <- compiledShaders) GL20.glAttachShader(program, shader) 
+    try
+      for shader <- compiledShaders do GL20.glAttachShader(program, shader) 
     
       GL20.glLinkProgram(program)
-      if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
+      if GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE then
         throw ShaderException(GL20.glGetProgramInfoLog(program, 2000), "")
-      }
       // VALIDATION!
       GL20.glValidateProgram(program)
-      if(GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_FALSE) {
+      if GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_FALSE then
         throw ShaderException(GL20.glGetProgramInfoLog(program, 2000), "")
-      }
-    } catch {
+    catch
       // Make sure we clean up if we run into issues.
       case t => GL20.glDeleteProgram(program); throw t
-    }
     program
-}
 /** looks up the "location" to a uniform in a shader program. */
 def lookupUniform(program: Int, name: String): Int =
   GL20.glGetUniformLocation(program, name)
@@ -87,20 +78,18 @@ abstract class BasicShaderProgram {
     private var programId: Int = 0
 
     /** Loas the configured shader into the graphics card. */
-    def load() : Unit = {
+    def load() : Unit =
       unload()  
       // TODO - remember shader ids for unloading?
       programId = linkShaders(compileShader(Shader.Vertex, vertexShaderCode),
                               compileShader(Shader.Fragment, fragmentShaderCode))
-    }
     /** Removes this shader from OpenGL/Graphics card memory. */
-    def unload(): Unit = if (programId != 0) {
+    def unload(): Unit = if programId != 0 then
         // TODO - unlink shaders?
         // GL20.glDetachShader(program, shader)
         // GL20.glDeleteShader(shader)
         GL20.glDeleteProgram(programId)
         programId = 0
-    }
     /** Configures the OpenGL pipeline to use this program. */
     def bind(): Unit = GL20.glUseProgram(programId)
     /** Configures OpenGL pipeline to not use any shader. */
@@ -108,21 +97,17 @@ abstract class BasicShaderProgram {
 
 
    /** Our version of uniform which binds to the shader being compiled by this program. */
-   protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
+   protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T]
      var location: Int = 0
      // TODO - does this need to be threadsafe?
-     def :=(value: T)(given ShaderLoadingEnvironment): Unit = {
-       if (location == 0) {
+     def :=(value: T)(given ShaderLoadingEnvironment): Unit =
+       if location == 0 then
          location = GL20.glGetUniformLocation(programId, name)
-       }
        summon[ShaderUniformLoadable[T]].loadUniform(location, value)
-     }
      
-   }
 
-    def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = {
+    def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] =
       MyUniform[T](name)
-    }
 
     // Temporary for debugging purposes only.
     def debugUniform(name: String): Int = GL20.glGetUniformLocation(programId, name)

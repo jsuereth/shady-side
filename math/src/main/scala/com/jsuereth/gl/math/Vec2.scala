@@ -20,7 +20,7 @@ package math
 import scala.math.Numeric
 import scala.reflect.ClassTag
 
-class Vec2[T : ClassTag](private[this] val values: Array[T]) {
+class Vec2[T : ClassTag](private[this] val values: Array[T])
   def x: T = values(0)
   def y: T = values(1)
   def rg: Vec2[T] = this
@@ -44,7 +44,6 @@ class Vec2[T : ClassTag](private[this] val values: Array[T]) {
      new Vec2[T](Array((x / length), (y / length)))
 
   override def toString: String = s"($x,$y)"
-}
 object Vec2 {
   def apply[T: ClassTag](x: T, y: T): Vec2[T] = new Vec2(Array(x,y))
 }

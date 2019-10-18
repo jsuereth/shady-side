@@ -41,13 +41,12 @@ import org.lwjgl.opengl.GL30.{
     glGenerateMipmap
 }
 /** Represents a texture loaded into OpenGL. */
-sealed trait Texture extends io.GLBuffer {
+sealed trait Texture extends io.GLBuffer
     /** The id of the texture in OpenGL. */
     def id: Int
 
     override def close(): Unit = glDeleteTextures(id)
-}
-object Texture {
+object Texture
     // TODO - loading methods for various formats.
     // TODO - mechanism to load into/out of frame buffers...
     import TextureParameter._
@@ -55,7 +54,7 @@ object Texture {
     // Give up on generic texture loading, an,d just do one for PNGs.
     def loadImage(source: java.io.InputStream,
                 params: Seq[TextureParameter] = Seq(MinFilter(Linear), MagFilter(Linear)),
-                genMipMap: Boolean = true): Texture2D = {
+                genMipMap: Boolean = true): Texture2D =
         // Double give-up, we use AWT for now...
         val img = javax.imageio.ImageIO.read(source)
         val pixels = new Array[Int](img.getHeight*img.getWidth)
@@ -63,17 +62,16 @@ object Texture {
         // Load RGBA format
         val buf = java.nio.ByteBuffer.allocateDirect(img.getWidth*img.getHeight*4)
         // We invert the y axis for OpenGL.
-        for {
+        for
             y <- (0 until img.getHeight).reverse
             x <- 0 until img.getWidth
             pixel = pixels(y*img.getWidth + x)
-        } {
+        do
             // RGBA
             buf.put(((pixel >> 16) & 0xFF).toByte)
             buf.put(((pixel >> 8) & 0xFF).toByte)
             buf.put((pixel & 0xFF).toByte)
             buf.put(((pixel >> 24) & 0xFF).toByte)
-        }
         buf.flip()
         val id = glGenTextures()
         glBindTexture(GL_TEXTURE_2D, id)
@@ -85,33 +83,27 @@ object Texture {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.getWidth, img.getHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf)
         glBindTexture(GL_TEXTURE_2D, 0);
         Texture2D(id)
-    }
 
     // TODO - is this useful?
-    inline def textureType[T]: Int = inline compiletime.erasedValue[T] match {
+    inline def textureType[T]: Int = inline compiletime.erasedValue[T] match
         case _: Texture1D => GL_TEXTURE_1D
         case _: Texture2D => GL_TEXTURE_2D
         case _: Texture3D => GL_TEXTURE_3D
         case _ => compiletime.error("Not a valid texture type!")
-    }
-}
 
 
 /** A reference to a one-dimensional texture. */
-case class Texture1D(id: Int) extends Texture {
+case class Texture1D(id: Int) extends Texture
     def bind(): Unit = glBindTexture(GL_TEXTURE_1D, id)
     def unbind(): Unit = glBindTexture(GL_TEXTURE_1D, 0)
-}
 
 /** A reference to a two dimensional texture. */
-case class Texture2D(id: Int) extends Texture {
+case class Texture2D(id: Int) extends Texture
     def bind(): Unit = glBindTexture(GL_TEXTURE_2D, id)
     def unbind(): Unit = glBindTexture(GL_TEXTURE_2D, 0)
-}
 
 /** A reference to a three dimensional texture. */
-case class Texture3D(id: Int) extends Texture {
+case class Texture3D(id: Int) extends Texture
     def bind(): Unit = glBindTexture(GL_TEXTURE_3D, id)
     def unbind(): Unit = glBindTexture(GL_TEXTURE_3D, 0)
-}
 

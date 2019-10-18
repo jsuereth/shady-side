@@ -27,42 +27,36 @@ import com.jsuereth.gl.io.ShaderUniformLoadable
 import org.lwjgl.system.MemoryStack
 
 /** this object contains our helper macros for this DSL. */
-object DslShaderProgram {
-    def defineShadersImpl[T](f: Expr[T])(given ctx: QuoteContext): Expr[(String,String)] = {
+object DslShaderProgram
+    def defineShadersImpl[T](f: Expr[T])(given ctx: QuoteContext): Expr[(String,String)] =
         import ctx.tasty._
         val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
         val (vert,frag) = helpers.convert(f.unseal)
         // TODO - we need to detect cross/references between shaders and lift into input/output variables.
         '{Tuple2(${Expr(vert.toProgramString)}, ${Expr(frag.toProgramString)})}
-    }
 
-    def valNameImpl(given ctx: QuoteContext): Expr[String] = {
+    def valNameImpl(given ctx: QuoteContext): Expr[String] =
       import ctx.tasty._
       // TODO - Detect a structure and look up its first uniform member as the location, i.e. make its name be
       // that member, which is hacky, but an "ok" workaround.
-      ctx.tasty.rootContext.owner match {
+      ctx.tasty.rootContext.owner match
          case IsValDefSymbol(self) => Expr(self.name)
          // TODO - real error message!
          case _ => throw new RuntimeException(s"Uniform() must be directly assigned to a val")
-      }
-    }
     inline def valName: String = ${valNameImpl}
-    def valNameOrFirstStructNameImpl[T](given ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
+    def valNameOrFirstStructNameImpl[T](given ctx: QuoteContext, tpe: Type[T]): Expr[String] =
       import ctx.tasty._
       val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
-      if (helpers.isStructType(tpe.unseal.tpe)) { 
+      if helpers.isStructType(tpe.unseal.tpe) then 
         '{${valNameImpl} + "." + ${Expr(helpers.firstStructMemberName(tpe.unseal.tpe).get)}} 
-      } else valNameImpl
-    }
+      else valNameImpl
     inline def valOrStructName[T]: String = ${valNameOrFirstStructNameImpl[T]}
 
-    def testStructDefImpl[T](given ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
+    def testStructDefImpl[T](given ctx: QuoteContext, tpe: Type[T]): Expr[String] =
       import ctx.tasty._
       val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
       Expr(helpers.toStructDefinition(tpe.unseal.tpe).map(_.toProgramString).toString)
-    }
     inline def testStructDef[T] = ${testStructDefImpl[T]}
-}
 abstract class DslShaderProgram extends BasicShaderProgram {
 
   // TODO - we'd also like to implicit-match eitehr ShaderUniformLoadable *or* OpaqueGlslType.

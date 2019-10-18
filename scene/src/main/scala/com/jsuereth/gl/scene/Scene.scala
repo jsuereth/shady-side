@@ -25,7 +25,7 @@ import mesh.Mesh3d
  * 
  * A scene can be more complicated than this base trait, but here are the absolute minimal characteristics.
  */
-trait Scene {
+trait Scene
     /** The camera to use for this scene. */
     def camera: Camera
     // TODO - figure out what kind of light abstraction we want to show off different shaders...
@@ -34,17 +34,15 @@ trait Scene {
     /** Objects to render in the scene. */
     def objectsInRenderOrder: Iterator[SceneObject]
     // TODO - def updateSimulation, etc....
-}
 
 /** A simple static scene that contains a few objects. */
 final class SimpleStaticScene(
     override val camera: Camera, 
     val light: Vec3[Float],
     val objects: Seq[SceneObject]
-) extends Scene {
+) extends Scene
     override def lights: Iterator[Vec3[Float]] = Iterator(light)
     override def objectsInRenderOrder: Iterator[SceneObject] = objects.iterator
-}
 
 /** Scene builder syntax. */
 class SimpleStaticSceneBuilder {
@@ -52,42 +50,34 @@ class SimpleStaticSceneBuilder {
   private var l = Vec3(0f, 10f, 0f)
   private val os = ArrayBuffer[SceneObject]()
   
-  def light(location: Vec3[Float]): this.type = {
+  def light(location: Vec3[Float]): this.type =
       this.l = location
       this
-  }
 
-  def camera(c: Camera): this.type = {
+  def camera(c: Camera): this.type =
       this.c = c
       this
-  }
 
-  def add(obj: SceneObject): this.type = {
+  def add(obj: SceneObject): this.type =
       this.os += obj
       this
-  }
   def add(mesh: Mesh3d): ObjBuilder = ObjBuilder(mesh)
 
-  class ObjBuilder(mesh: Mesh3d) {
+  class ObjBuilder(mesh: Mesh3d)
       private[this] var p = Vec3(0f,0f,0f)
       private[this] var o = Quaternion.identity[Float]
       private[this] var s = Vec3(1f,1f,1f)
-      def pos(pos: Vec3[Float]): this.type = {
+      def pos(pos: Vec3[Float]): this.type =
           this.p = pos
           this
-      }
-      def orientation(o: Quaternion[Float]): this.type = {
+      def orientation(o: Quaternion[Float]): this.type =
           this.o = o
           this
-      }
-      def scale(x: Float, y: Float, z: Float): this.type = {
+      def scale(x: Float, y: Float, z: Float): this.type =
           this.s = Vec3(x,y,z)
           this
-      }
-      def done(): SimpleStaticSceneBuilder = {
+      def done(): SimpleStaticSceneBuilder =
           add(StaticSceneObject(mesh, p, o, s))
-      }
-  }
 
   def done(): Scene = SimpleStaticScene(c, l, os.toSeq)
 }

@@ -37,11 +37,11 @@ object ExampleCartoonShader extends DslShaderProgram {
       val H = (L + V).normalize
       val diffuse = materialKd() * Math.max(0, L.dot(worldNormal))
       val specular =
-        if (L.dot(worldNormal) > 0.0f) materialKs() * Math.pow(Math.max(0, H.dot(worldNormal)).toFloat, materialShininess()).toFloat
+        if L.dot(worldNormal) > 0.0f then materialKs() * Math.pow(Math.max(0, H.dot(worldNormal)).toFloat, materialShininess()).toFloat
         else 0.0f
       //Black color if dot product is smaller than 0.3
       //else keep the same colors
-      val edgeDetection = if (V.dot(worldNormal) > 0.3f) 1f else 0f
+      val edgeDetection = if V.dot(worldNormal) > 0.3f then 1f else 0f
       val light = edgeDetection * (diffuse + specular)
       Output("color", 0, Vec4(light, light, light, 1f))
     }

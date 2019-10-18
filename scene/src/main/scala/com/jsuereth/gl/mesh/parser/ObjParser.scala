@@ -26,80 +26,69 @@ import math.{Vec2,Vec3}
 class ObjParsedMesh(override val vertices: Seq[Vec3[Float]],
                     override val normals: Seq[Vec3[Float]],
                     override val textureCoords: Seq[Vec2[Float]],
-                    override val faces: Seq[Face]) extends Mesh3d {
+                    override val faces: Seq[Face]) extends Mesh3d
   override def toString: String = s"ObjFileMesh(faces=${faces.size})"
-}
-object ObjFileParser {
+object ObjFileParser
   def parse(in: File): Map[String,Mesh3d] =
     parse(java.io.FileInputStream(in))
-  def parse(in: InputStream): Map[String,Mesh3d] = {
+  def parse(in: InputStream): Map[String,Mesh3d] =
     val tmp = ObjFileParser()
     tmp.parse(in)
-  }
-}
 /** A parser for .obj files.  Only really handles the ones I've used, not robust. 
  *  Also, ignores material files.
  */
-class ObjFileParser {
+class ObjFileParser
   private var currentObjectParser: Option[(String, ObjMeshParser)] = None
   private var meshes = collection.mutable.Map[String, ObjParsedMesh]()
 
-  def parse(in: File): Map[String,ObjParsedMesh] = {
+  def parse(in: File): Map[String,ObjParsedMesh] =
     parse(java.io.FileInputStream(in))
-  }
 
-  def parse(in: InputStream): Map[String,ObjParsedMesh] = {
+  def parse(in: InputStream): Map[String,ObjParsedMesh] =
     try readStream(in)
     finally in.close()
     meshes.toMap
-  }
 
-  private def readStream(in: java.io.InputStream): Unit = {
+  private def readStream(in: java.io.InputStream): Unit =
     val buffer = java.io.BufferedReader(java.io.InputStreamReader(in))
     def read(): Unit =
-      buffer.readLine match {
+      buffer.readLine match
         case null => ()
         case line => 
           readLine(line)
           read()
-      }
     read()
     cleanSubParser()
-  }
 
   private def cleanSubParser(): Unit =
-     currentObjectParser match {
+     currentObjectParser match
             case Some((name, parser)) => meshes.put(name, parser.obj)
             case _ => None
-        }
 
   private def readLine(line: String): Unit = 
-    line match {
+    line match
       case ObjLine("#", _) | "" => // Ignore comments.
       case ObjLine("usemtl", mtl +: Nil) => System.err.println("Ignoring material: " + mtl) // TODO - figure out what to do w/ materials.
       case ObjLine("o", name +: Nil) => 
         cleanSubParser()
         currentObjectParser = Some((name, ObjMeshParser()))
       case msg =>
-        currentObjectParser match {
+        currentObjectParser match
           case Some((_, parser)) => parser.readLine(msg)  
           case None => 
             // Handle unnamed objects
             currentObjectParser = Some(("unnamed", ObjMeshParser()))
             currentObjectParser.get._2.readLine(msg)
-        }
-    }
-}
 
 /** stateful parser we use to look for objects within a .obj file. */
-class ObjMeshParser() {
+class ObjMeshParser()
   private var vertices = collection.mutable.ArrayBuffer.empty[Vec3[Float]]
   private var normals = collection.mutable.ArrayBuffer.empty[Vec3[Float]]
   private var textureCoords = collection.mutable.ArrayBuffer.empty[Vec2[Float]]
   private var faces = collection.mutable.ArrayBuffer.empty[Face]
   /** Read a line of input for a named object. */
   def readLine(line: String): Unit =
-    line match {
+    line match
       case ObjLine("g", group +: Nil) => System.err.println(s"Ignoring group: $group")
       case ObjLine("s", config +: Nil) => System.err.println(s"Ignoring smooth shading config: $config")
       case ObjLine("usemtl", mtl +: Nil) => System.err.println("Ignoring material: " + mtl)
@@ -110,9 +99,8 @@ class ObjMeshParser() {
       case ObjLine("f", F(face))     => faces.append(face)
       // TODO - support polylines ("l")
       case msg => System.err.println(s"Could not read line in object: $msg") // TODO - better errors.
-    }
 
-  def obj: ObjParsedMesh = {
+  def obj: ObjParsedMesh =
     // TODO - Clean up imported objects.
     // Convert all quad faces into triangles
     val fixedFaces: Seq[TriangleFace] = faces.flatMap {
@@ -120,13 +108,12 @@ class ObjMeshParser() {
       case QuadFace(one,two,three,four) => Seq(TriangleFace(one,two,three), TriangleFace(three, four, one))
     }.toSeq
     // Generate normals if needed, update faces.
-    val faces2 = if (normals.isEmpty) generateNormals(fixedFaces) else fixedFaces
+    val faces2 = if normals.isEmpty then generateNormals(fixedFaces) else fixedFaces
     ObjParsedMesh(vertices.toSeq, normals.toSeq, textureCoords.toSeq, faces2.toSeq)
-  }
 
-  private def generateNormals(faces: Seq[TriangleFace]): Seq[TriangleFace] = {
-    for (v <- vertices) normals += Vec3(0f,0f,0f)
-    for (TriangleFace(one,two,three) <- faces) {
+  private def generateNormals(faces: Seq[TriangleFace]): Seq[TriangleFace] =
+    for v <- vertices do normals += Vec3(0f,0f,0f)
+    for TriangleFace(one,two,three) <- faces do
       val A = vertices(one.vertix-1)
       val B = vertices(two.vertix-1)
       val C = vertices(three.vertix-1)
@@ -134,73 +121,55 @@ class ObjMeshParser() {
       normals(one.vertix-1) += p
       normals(two.vertix-1) += p
       normals(three.vertix-1) += p
-    }
-    for (i <- 0 until normals.size) {
+    for i <- 0 until normals.size do
       normals(i) = normals(i).normalize
-    }
-    for {
+    for
       TriangleFace(one,two,three) <- faces
-    } yield TriangleFace(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
-  }
-}
+    yield TriangleFace(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
 
-private[mesh] object F {
+private[mesh] object F
   def unapply(face: Seq[String]): Option[Face] =
-    face match {
+    face match
       case Seq(FI(one), FI(two), FI(three)) => Some(TriangleFace(one,two,three))
       case Seq(FI(one), FI(two), FI(three), FI(four)) => Some(QuadFace(one,two,three,four))
       case _ => None
-   }
-}
 
-private[mesh] object FI {
+private[mesh] object FI
   def unapply(face: String): Option[FaceIndex] =
-    face split "/" match {
+    face split "/" match
       case Array(It(one)) => Some(FaceIndex(one, 0, 0))
       case Array(It(one), It(two)) => Some(FaceIndex(one, two, 0))
       case Array(It(one), It(two), It(three)) =>  Some(FaceIndex(one, two, three))
       case Array(It(one), "", It(three)) =>  Some(FaceIndex(one, 0, three))
       case _ => None 
-    }
-}
 
-private[parser] object P3f {
+private[parser] object P3f
   def unapply(in: Seq[String]): Option[(Float, Float, Float)] =
-    in match {
+    in match
       case Seq(Fl(x), Fl(y), Fl(z)) => Some((x,y,z))
       case _ => None
-    }
-}
 
-private[parser] object P2f {
+private[parser] object P2f
   def unapply(in: Seq[String]): Option[(Float, Float)] =
-    in match {
+    in match
       case Seq(Fl(x), Fl(y)) => Some(x -> y)
       case _ => None
-    }
-}
-private[parser] object ObjLine {
-  def unapply(in: String): Option[(String, Seq[String])] = {
+private[parser] object ObjLine
+  def unapply(in: String): Option[(String, Seq[String])] =
     val split = in split "\\s+"
-    if(split.isEmpty) None
-    else {
+    if split.isEmpty then None
+    else
       Some(split.head -> split.tail)
-    }
-  }
     
-}
 
-private[parser] object It {
+private[parser] object It
   def unapply(in: String): Option[Int] =
     try Some(in.toInt)
-    catch {
+    catch
       case _: NumberFormatException => None
-    }
-}
 private[parser] object Fl {
   def unapply(in: String): Option[Float] =
     try Some(in.toFloat)
-    catch {
+    catch
       case _: NumberFormatException => None
-    }
 }

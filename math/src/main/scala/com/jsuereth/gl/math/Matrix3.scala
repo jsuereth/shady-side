@@ -24,7 +24,7 @@ type Matrix3[T] = Matrix3x3[T]
 val Matrix3 = Matrix3x3
 
 /** A matrix library for floating point values, meant to be relatively efficient and the analog of GLSL matrix. */
-class Matrix3x3[T : ClassTag](val values: Array[T]) {
+class Matrix3x3[T : ClassTag](val values: Array[T])
   // row-column formats
   def m11: T = values(0)
   def m21: T = values(1)
@@ -43,35 +43,31 @@ class Matrix3x3[T : ClassTag](val values: Array[T]) {
   def *(scale: T)(given Numeric[T]): Matrix3x3[T] =
     Matrix3x3(values map (_ * scale))
 
-  def *(vec: Vec3[T])(given Numeric[T]): Vec3[T] = {
+  def *(vec: Vec3[T])(given Numeric[T]): Vec3[T] =
     import vec.{x,y,z}
     val newX = m11*x + m12*y + m13*z
     val newY = m21*x + m22*y + m23*z
     val newZ = m31*x + m32*y + m33*z
     Vec3(newX, newY, newZ)
-  }
-  def *(other: Matrix3x3[T])(given Numeric[T]): Matrix3x3[T] = {
+  def *(other: Matrix3x3[T])(given Numeric[T]): Matrix3x3[T] =
     // TODO - attempt to use Coppersmith–Winograd algorithm?
     // For now we do this naively, which is possibly more efficeint.
     val next = new Array[T](9)
     def idx(row: Int, col: Int): Int = row + (col*3)
     // TODO - Should we unroll this?
-    for {
+    for
       i <- 0 until 3
       j <- 0 until 3
-    } next(idx(i,j)) = (for {
+    do next(idx(i,j)) = (for
       k <- 0 until 3
-    } yield apply(i)(k) * other(k)(j)).sum
+    yield apply(i)(k) * other(k)(j)).sum
     Matrix3x3(next)
-  }
   // TODO - Derive "show" or "print" across all numbers/formats once we have a shapeless release.
-  override def toString: String = {
+  override def toString: String =
     def f(t: T): String = t.toString     // TODO - use fixed-format number width...
     s""":|${f(m11)}|${f(m12)}|${f(m13)}|
         :|${f(m21)}|${f(m22)}|${f(m23)}|
         :|${f(m31)}|${f(m32)}|${f(m33)}|""".stripMargin(':')
-  }
-}
 object Matrix3x3 {
   def identity[T: ClassTag : Numeric]: Matrix3x3[T] =
     new Matrix3x3(Array(

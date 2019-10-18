@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 // TODO - look into making this an opaque type w/ wrappers.  We give up == + toString...
 // TODO - we probably need to provide our own set of numeric classes for this use case.
-final class Vec3[T : ClassTag](private[this] val values: Array[T]) {
+final class Vec3[T : ClassTag](private[this] val values: Array[T])
   /** The x coordinate value. */
   def x: T = values(0)
   /** The y coordinate value. */
@@ -77,14 +77,12 @@ final class Vec3[T : ClassTag](private[this] val values: Array[T]) {
 
   override def toString: String = s"($x,$y,$z)"
   override def equals(o: Any): Boolean =
-    o match {
+    o match
       case other: Vec3[T] => (x == other.x) && (y == other.y) && (z == other.z)
       case _ => false
-    }
 
   // TODO - hashcode the contents of the array.
   override def hashCode(): Int = super.hashCode()
-}
 object Vec3 {
   def apply[T: ClassTag](x: T, y: T, z: T): Vec3[T] = new Vec3[T](Array(x,y,z))
   def apply[T: ClassTag](xy: Vec2[T], z: T): Vec3[T] = new Vec3[T](Array(xy.x, xy.y, z))

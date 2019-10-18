@@ -47,26 +47,23 @@ private def wrap(idx: Int): ActiveTextureIndex = idx
  *
  *  This is a mutable interface, as we expect it to be passe dthrough shader loadable context.
  */
-trait ActiveTextures {
+trait ActiveTextures
   /** Grabs the next available texture index. */  
   def acquire(): ActiveTextureIndex
   /** Returns a texture index in this call. */
   def release(idx: ActiveTextureIndex): Unit
 
   /** Acquires an active texture for a task,t hen releases it. */
-  inline def withNextActiveIndex[A](f: ActiveTextureIndex => A): A = {
+  inline def withNextActiveIndex[A](f: ActiveTextureIndex => A): A =
     val idx = acquire()
     try f(idx)
     finally release(idx)
-  }
   /** Create a new "record" of what textures were used. */
   def push(): Unit
   /** Automatically release all textures used since last push. */
   def pop(): Unit
-}
-object ActiveTextures {
+object ActiveTextures
     def apply(maxIndex: Int = unwrap(MaxActiveIndex)): ActiveTextures = SimpleActiveTextures(maxIndex)
-}
 
 private class SimpleActiveTextures(maxIndex: Int) extends ActiveTextures {
     private var depth: Int = 0
@@ -79,10 +76,9 @@ private class SimpleActiveTextures(maxIndex: Int) extends ActiveTextures {
     def release(idx: ActiveTextureIndex): Unit = used(unwrap(idx)) = MaxDepth
     // TODO - ring buffer impl, something faster?
     def acquire(): ActiveTextureIndex =
-      used.iterator.zipWithIndex.find((value, idx) => value > depth) match {
+      used.iterator.zipWithIndex.find((value, idx) => value > depth) match
         case Some((_, idx)) => 
           used(idx) = depth
           wrap(idx)
         case None => throw RuntimeException("No more textures available!")
-      }
 }

@@ -47,7 +47,7 @@ object Main {
     var scene: Scene = null
 
 
-    def run(): Unit = {
+    def run(): Unit =
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
         System.out.println("Example shaders")
         System.out.println("--- Vertex Shader ---")
@@ -55,29 +55,26 @@ object Main {
         System.out.println("--- Fragment Shader ---")
         System.out.println(CartoonShader.fragmentShaderCode)
         System.out.println("---  ---")
-        try {
+        try
             init()
             loop()
 
             // Release window and window callbacks
             glfwFreeCallbacks(window)
             glfwDestroyWindow(window)
-        } finally {
+        finally
             // Terminate GLFW and release the GLFWerrorfun
             glfwTerminate()
             glfwSetErrorCallback(null).free()
-        }
-    }
 
-    private def init(): Unit = {
+    private def init(): Unit =
         // Setup an error callback. The default implementation
         // will print the error message in System.err.
         GLFWErrorCallback.createPrint(System.err).set()
 
         // Initialize GLFW. Most GLFW functions will not work before doing this.
-        if (!glfwInit()) {
+        if !glfwInit() then
             throw new IllegalStateException("Unable to initialize GLFW");
-        }
 
         // Configure our window
         glfwDefaultWindowHints() // optional, the current window hints are already the default
@@ -88,33 +85,32 @@ object Main {
 
         // Create the window
         window = glfwCreateWindow(WIDTH, HEIGHT, "Hello World!", NULL, NULL)
-        if (window == NULL) {
+        if window == NULL then
             throw new RuntimeException("Failed to create the GLFW window")
-        }
         val cameraAmount = 0.5f
         // Setup a key callback. It will be called every time a key is pressed, repeated or released.
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) => {
-            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
+            if key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE then {
                 glfwSetWindowShouldClose(window, true) // We will detect this in the rendering loop
-            } else if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_W && action == GLFW_PRESS then {
                 scene.camera.moveForward(cameraAmount)
-            } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_S && action == GLFW_PRESS then {
                 scene.camera.moveForward(-cameraAmount)
-            } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_A && action == GLFW_PRESS then {
                 scene.camera.moveRight(-cameraAmount)
-            } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_D && action == GLFW_PRESS then {
                 scene.camera.moveRight(cameraAmount)
-            } else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_Z && action == GLFW_PRESS then {
                 scene.camera.moveUp(-cameraAmount)
-            } else if (key == GLFW_KEY_X && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_X && action == GLFW_PRESS then {
                 scene.camera.moveUp(cameraAmount)
-            } else if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_UP && action == GLFW_PRESS then {
                 scene.camera.turnUp(cameraAmount)
-            } else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_DOWN && action == GLFW_PRESS then {
                 scene.camera.turnUp(-cameraAmount)
-            } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_LEFT && action == GLFW_PRESS then {
                 scene.camera.turnRight(-cameraAmount)
-            } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+            } else if key == GLFW_KEY_RIGHT && action == GLFW_PRESS then {
                 scene.camera.turnRight(cameraAmount)
             }
         });
@@ -135,9 +131,8 @@ object Main {
 
         // Make the window visible
         glfwShowWindow(window)
-    }
 
-    private def loop(): Unit = {
+    private def loop(): Unit =
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
         // LWJGL detects the context that is current in the current thread,
@@ -154,9 +149,8 @@ object Main {
         // Load models and shader.
         val models = ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/deep_space_1_11.obj"))
         System.out.println("Done loading models!")
-        for ((name, mesh) <- models) {
+        for (name, mesh) <- models do
             System.err.println(s" - Loaded model [$name] w/ ${mesh.vertices.size} vertices, ${mesh.normals.size} normals, ${mesh.textureCoords.size} texcoords, ${mesh.faces.size} faces")
-        }
         val mesh =
           models.iterator.next._2
         val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/texture/foil_silver_ramp.png"))
@@ -182,7 +176,7 @@ object Main {
         System.out.println(s" world.projection: ${CartoonShader.debugUniform("world.projection")}")
 
         // Render a scene using cartoon shader.
-        def render(): Unit = {
+        def render(): Unit =
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) // clear the framebuffer
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_CULL_FACE)
@@ -192,16 +186,15 @@ object Main {
 
             CartoonShader.bind()
             withMemoryStack {
-                given env: ShaderLoadingEnvironment {
+                given env: ShaderLoadingEnvironment
                     val stack = summon[MemoryStack]
                     val textures = ActiveTextures()
-                }
                 CartoonShader.world := WorldData(light = scene.lights.next,
                                                  eye = scene.camera.eyePosition,
                                                  view = scene.camera.viewMatrix,
                                                  projection = projectionMatrix)
                 CartoonShader.materialKdTexture := uglyTexture
-                for (o <- scene.objectsInRenderOrder) {
+                for o <- scene.objectsInRenderOrder do
                     env.push()
                     // TODO - pull material from objects.
                     CartoonShader.materialShininess := 1.3f
@@ -211,24 +204,19 @@ object Main {
                     // TODO - pull the VAO for the model.
                     vao.draw()
                     env.pop()
-                }
             }
-        }
         
         
 
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
-        while (!glfwWindowShouldClose(window)) {
+        while !glfwWindowShouldClose(window) do
             render()
             glfwSwapBuffers(window)
             // Poll for window events. The key callback above will only be
             // invoked during this call.
             glfwPollEvents()
-        }
-    }
 
-    def main(args: Array[String]): Unit = {
+    def main(args: Array[String]): Unit =
       run()
-    }
 }
