@@ -98,11 +98,11 @@ class DefaultShaderConvertEnv extends ShaderConvertorEnv
 class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     // TODO - given new API we may be able to use Type/TypeTree directly without
     // hiding it behind tasty.Reflection instance.
-    import r._
+    import r.{_,given}
 
     def toGlslTypeFromTree(tpe: r.TypeTree): String = toGlslType(tpe.tpe)
     def toGlslType(tpe: r.Type): String =
-        import r._
+        import r.{_,given}
         // TODO - more principled version of this...
         // TODO - test to ensure this lines up with sizeof, vaoattribute, uniform loader, etc.
         if tpe <:< typeOf[Vec2[Float]] then "vec2"

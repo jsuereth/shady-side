@@ -109,13 +109,13 @@ object BufferLoadable
  * Extension method for ByteBuffer. 
  * Allows calling 'load' on non-primitive types.
  */
-def (buf: ByteBuffer) load[T](value: T)(given loader: BufferLoadable[T]): Unit = loader.load(value, buf)
+def [T](buf: ByteBuffer) load(value: T)(given loader: BufferLoadable[T]): Unit = loader.load(value, buf)
 
 /** 
  * Extension method for ByteBuffer. 
  * Allows calling 'load' for partial array values.
  */
-def (buf: ByteBuffer) loadArray[T](value: Array[T], length: Int, offset: Int)(given loader: BufferLoadable[T]): Unit =
+def [T](buf: ByteBuffer) loadArray(value: Array[T], length: Int, offset: Int)(given loader: BufferLoadable[T]): Unit =
   for i <- offset until (length+offset) if i < value.length do
     loader.load(value(i), buf)
 
