@@ -123,8 +123,9 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         else throw new RuntimeException(s"Unknown GLSL type: ${tpe}")
 
     // TODO - can we make type->glsl type a straight inline method we use in macros?
-    def toStructMemberDef(sym: r.ValDefSymbol): StructMember = 
-      StructMember(sym.name, toGlslType(sym.tree.tpt.tpe))
+    def toStructMemberDef(sym: r.Symbol): StructMember = 
+      // TODO - Remove the cast to ValDef...
+      StructMember(sym.name, toGlslType(sym.tree.asInstanceOf[r.ValDef].tpt.tpe))
 
     /** Converts a given type into a GLSL struct definition. */
     def toStructDefinition(tpe: r.Type): Option[Declaration.Struct] = 

@@ -39,10 +39,8 @@ object DslShaderProgram
       import ctx.tasty.{_,given}
       // TODO - Detect a structure and look up its first uniform member as the location, i.e. make its name be
       // that member, which is hacky, but an "ok" workaround.
-      ctx.tasty.rootContext.owner match
-         case IsValDefSymbol(self) => Expr(self.name)
-         // TODO - real error message!
-         case _ => throw new RuntimeException(s"Uniform() must be directly assigned to a val")
+      if (ctx.tasty.rootContext.owner.isValDef) Expr(ctx.tasty.rootContext.owner.name)
+      else throw new RuntimeException(s"Uniform() must be directly assigned to a val")
     inline def valName: String = ${valNameImpl}
     def valNameOrFirstStructNameImpl[T](given ctx: QuoteContext, tpe: Type[T]): Expr[String] =
       import ctx.tasty.{_,given}
