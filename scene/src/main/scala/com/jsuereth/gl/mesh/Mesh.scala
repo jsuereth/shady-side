@@ -17,7 +17,7 @@
 package com.jsuereth.gl
 package mesh
 
-import math._
+import math.{given _, _}
 import org.lwjgl.system.MemoryStack
 import io.{VertexArrayObject, BufferLoadable, vaoAttributes}
 
@@ -85,7 +85,7 @@ trait Mesh3d {
 
     // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
     /** Loads this mesh into a VAO that can be rendered. */
-    def loadVao(given MemoryStack): VertexArrayObject[MeshPoint] = {
+    def loadVao(using MemoryStack): VertexArrayObject[MeshPoint] = {
       // TODO - Figure out if triangles or quads.
       VertexArrayObject.loadWithIndex(points, idxes)
     }

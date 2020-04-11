@@ -12,7 +12,7 @@ import com.jsuereth.gl.texture.Texture2D
 
 /** This is our target syntax. */
 // Attempt at cel-shading
-import com.jsuereth.gl.math.{given, _}
+import com.jsuereth.gl.math.{given _, _}
 
 object TextureShader extends DslShaderProgram {
 

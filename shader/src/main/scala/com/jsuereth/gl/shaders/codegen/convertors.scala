@@ -105,7 +105,7 @@ class DefaultShaderConvertEnv extends ShaderConvertorEnv {
 }
 
 /** Utilities for translating Scala into GLSL. */
-class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
+class Convertors[R <: tasty.Reflection](val r: R)(using QuoteContext) {
     // TODO - given new API we may be able to use Type/TypeTree directly without
     // hiding it behind tasty.Reflection instance.
     import r._
@@ -134,8 +134,8 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     }
 
     // TODO - can we make type->glsl type a straight inline method we use in macros?
-    def toStructMemberDef(sym: r.ValDefSymbol): StructMember = 
-      StructMember(sym.name, toGlslType(sym.tree.tpt.tpe))
+    def toStructMemberDef(sym: r.Symbol): StructMember = 
+      StructMember(sym.name, toGlslType(sym.tree.asInstanceOf[r.ValDef].tpt.tpe))
 
     /** Converts a given type into a GLSL struct definition. */
     def toStructDefinition(tpe: r.Type): Option[Declaration.Struct] = 
@@ -165,16 +165,24 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
             case _ => None
         }
     }
+    object Erased {
+      def unapply(tree: r.Statement): Option[r.Tree] =
+        tree match {
+          case Inlined(Some(erased), stmts, blck) => Some(erased)
+          case _ => None
+        }
+    }
+
     /** Extractor for val x = Input(...) */
     object Input {
         /** Returns:  name, type, location */
         def unapply(tree: r.Statement): Option[(String, String, Int)] = tree match {
             // defined in object
-            case ValDef(sym, tpe, Some(Apply(TypeApply(Ident("Input"), _), List(NamedArg("location", Literal(Constant(location: Int))))))) =>
+            case ValDef(sym, tpe, Some(Erased(
+              Apply(TypeApply(Ident("Input"), _), List(NamedArg("location", Literal(Constant(location: Int))))))
+              )) =>
               Some(sym, toGlslTypeFromTree(tpe), location)
-            // TODO -defined in class  
-            //case ValDef(sym, tpe, Some(_)) =>
-            //  Some(sym, toGlslTypeFromTree(tpe), 0)
+            // Defined in Inline....
             case _ => None
         }
     }
@@ -182,7 +190,8 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     object Output {
         /** Returns:  name, value  (todo - tpe + location) */
         def unapply(tree: r.Statement): Option[(String, String, r.Statement)] = tree match {
-            case Apply(TypeApply(Ident("Output"), _), List(Literal(Constant(name: String)), position, value)) => Some(name, toGlslType(value.tpe), value)
+            case Erased(Apply(TypeApply(Ident("Output"), _), List(Literal(Constant(name: String)), position, value))) =>
+              Some(name, toGlslType(value.tpe), value)
             case _ => None
         }
     }
@@ -190,7 +199,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     object Uniform {
         /** Returns:  name, type. */
         def unapply(tree: r.Statement): Option[(String, String)] = tree match {
-            case Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List()) if a.tpe <:< typeOf[Uniform[_]]  => 
+            case Erased(Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List())) if a.tpe <:< typeOf[Uniform[_]]  => 
               // TODO - handle uniform-style structs.
               if (isStructType(tpe.tpe)) None
               else Some(ref.toString, toGlslType(tpe.tpe))
@@ -201,7 +210,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     object UniformStruct {
         /** Returns:  name, type and structure definition. */
         def unapply(tree: r.Statement): Option[(String, Declaration.Struct)] = tree match {
-            case Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List()) if a.tpe <:< typeOf[Uniform[_]] && isStructType(tpe.tpe)  => 
+            case Erased(Apply(Apply(TypeApply(Ident("apply"), List(tpe)), List(a @ Ident(ref))), List())) if a.tpe <:< typeOf[Uniform[_]] && isStructType(tpe.tpe)  => 
               // TODO - handle uniform-style structs.
               toStructDefinition(tpe.tpe) match {
                 case Some(struct) => Some(ref.toString, struct)
@@ -215,8 +224,9 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         // TODO - limit glPosition to calling against the appropriate type/symbol...
         def unapply(tree: r.Statement): Option[r.Statement] = tree match {
             // Called by Object
-            case Apply(TypeApply(Ident("glPosition"), _), List(value)) => Some(value)
+            case Erased(Apply(TypeApply(Ident("glPosition"), _), List(value))) => Some(value)
             // called within Class
+            // TODO - update for inlined/erasure.
             case Apply(TypeApply(Select(_, "glPosition"), _), List(value)) => Some(value)
             case _ => None
         }
@@ -265,7 +275,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
             case Apply(Apply(mthd @ Select(lhs, "dot"), List(rhs)), _) => 
               Some(("dot", List(lhs,rhs)))
             // Handle Sampler2D methods  
-            case  Apply(Apply(Ident("texture"), List(ref)), List(arg)) if ref.tpe <:< typeOf[Texture2D] =>
+            case  Erased(Apply(Apply(Ident("texture"), List(ref)), List(arg))) if ref.tpe <:< typeOf[Texture2D] =>
               Some("texture", List(ref, arg))
             // Handle our built-int math operations.  TODO - lock this down to NOT be so flexible...
             case Apply(Apply(TypeApply(Ident(mathOp), _), args), /* Implicit witnesses */_) if ourMathOperations(mathOp) =>
@@ -283,7 +293,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         }
     }
 
-    def convertExpr(tree: r.Statement)(given env: StmtConvertorEnv): Expr = tree match {
+    def convertExpr(tree: r.Statement)(using env: StmtConvertorEnv): Expr = tree match {
         case Uniform(name, tpe) => 
           env.recordUniform(name, tpe)
           Expr.Id(name)
@@ -304,9 +314,12 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         // TODO - actual encode literals in AST?
         case Literal(constant) => Expr.Id(constantToString(constant))
         // TODO - error message for everything else.
-        case _ => throw new RuntimeException(s"Unable to convert tree: $tree")
+        //case Inlined(_, _, blck) => convertExpr(blck)
+        case _ => 
+           summon[QuoteContext].error(s"Unable to convert to expr: ${tree.show}\n\nfull tree: $tree\n\nPlease file a bug with this context.")
+           Expr.Id("")
     }
-    def convertStmt(tree: r.Statement)(given env: StmtConvertorEnv): codegen.Statement = tree match {
+    def convertStmt(tree: r.Statement)(using env: StmtConvertorEnv): codegen.Statement = tree match {
         // assign
         case Output(name, tpe, exp) =>
           env.recordOutput(name, tpe, 0) // TODO - location
@@ -322,7 +335,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         case _ => codegen.Statement.Effect(convertExpr(tree))
     }
     // TODO - handle helper methods and extract them separately as definitions.
-    def walkFragmentShader(tree: r.Statement)(given env: ShaderConvertorEnv): Unit = tree match {
+    def walkFragmentShader(tree: r.Statement)(using env: ShaderConvertorEnv): Unit = tree match {
       case Inlined(None, stmts, exp) => walkFragmentShader(exp)
       case Block(statements, last) => 
         for(s <- (statements :+ last)) {
@@ -334,18 +347,17 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
     }
 
     // TODO - share some of the "walk" code with walkFragmentShader.
-    def walkVertexShader(tree: r.Statement)(given env: VertexShaderConvertorEnv): Unit = tree match {
+    def walkVertexShader(tree: r.Statement)(using env: VertexShaderConvertorEnv): Unit = tree match {
       // Ignore when we type a block as "Unit"
       case Typed(block, tpe) if tpe.tpe <:< typeOf[Unit] => walkVertexShader(block)
       case FragmentShader(exp) => 
         // TODO - make a new environment, then unify the shaders. after walking.
-        walkFragmentShader(exp)(given env.fragmentEnv)
+        walkFragmentShader(exp)(using env.fragmentEnv)
       case Inlined(None, stmts, exp) => walkVertexShader(exp)
       case Block(statements, last) => 
         for(s <- (statements :+ last)) {
           walkVertexShader(s)
         }
-      
       case stmt => env.addStatement(convertStmt(stmt))  
     }
 
@@ -354,7 +366,8 @@ class Convertors[R <: tasty.Reflection](val r: R)(given QuoteContext) {
         object env extends DefaultShaderConvertEnv with VertexShaderConvertorEnv {
             override val fragmentEnv = new DefaultShaderConvertEnv()
         }
-        walkVertexShader(tree)(given env)
+        //summon[QuoteContext].warning(s"Found shader: $tree");
+        walkVertexShader(tree)(using env)
         TransformAst(env.ast, env.fragmentEnv.ast)
     }
 }

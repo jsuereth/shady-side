@@ -17,7 +17,7 @@
 package com.jsuereth.gl
 package scene
 
-import math._
+import math.{given _, _}
 
 /** 
  * Defines a camera for a scene.

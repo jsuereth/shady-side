@@ -23,7 +23,7 @@ import org.lwjgl.opengl.GL
 import org.lwjgl.glfw.GLFW._
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.system.MemoryUtil._
-import com.jsuereth.gl.math.{given, _}
+import com.jsuereth.gl.math.{given _, _}
 import com.jsuereth.gl.io.{
     withMemoryStack,
     VertexArrayObject,
@@ -192,7 +192,7 @@ object Main {
 
             CartoonShader.bind()
             withMemoryStack {
-                given env: ShaderLoadingEnvironment {
+                given env as ShaderLoadingEnvironment {
                     val stack = summon[MemoryStack]
                     val textures = ActiveTextures()
                 }

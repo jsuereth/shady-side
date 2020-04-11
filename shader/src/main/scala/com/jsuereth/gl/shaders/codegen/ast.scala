@@ -17,7 +17,7 @@
 package com.jsuereth.gl.shaders.codegen
 
 case class Ast(decls: Seq[Declaration], version: String = "300 es") {
-  // TODO - which version ddo we target?
+  // TODO - which version do we target?
   // TODO - Allow specifying default precision for opengl ES
   def toProgramString: String = 
     
@@ -27,7 +27,6 @@ case class Ast(decls: Seq[Declaration], version: String = "300 es") {
         |precision highp int;
         |
         |${decls.map(_.toProgramString).mkString("\n")}""".stripMargin('|')
-    //s"${decls.map(_.toProgramString).mkString("\n")}"
 }
 
 // TODO - a better encoding of variables from GLSL

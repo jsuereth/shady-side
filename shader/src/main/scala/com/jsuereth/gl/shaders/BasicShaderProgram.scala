@@ -85,7 +85,6 @@ abstract class BasicShaderProgram {
     def fragmentShaderCode: String
 
     private var programId: Int = 0
-
     /** Loas the configured shader into the graphics card. */
     def load() : Unit = {
       unload()  
@@ -111,7 +110,7 @@ abstract class BasicShaderProgram {
    protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
      var location: Int = 0
      // TODO - does this need to be threadsafe?
-     def :=(value: T)(given ShaderLoadingEnvironment): Unit = {
+     def :=(value: T)(using ShaderLoadingEnvironment): Unit = {
        if (location == 0) {
          location = GL20.glGetUniformLocation(programId, name)
        }

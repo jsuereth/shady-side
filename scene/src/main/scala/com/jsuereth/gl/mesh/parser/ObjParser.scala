@@ -20,7 +20,7 @@ package parser
 
 
 import java.io.{File, InputStream}
-import math.{Vec2,Vec3}
+import math.{Vec2,Vec3, given _}
 
 /** The results of parsing an obj file. */
 class ObjParsedMesh(override val vertices: Seq[Vec3[Float]],

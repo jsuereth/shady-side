@@ -40,17 +40,17 @@ class Matrix3x3[T : ClassTag](val values: Array[T]) {
   def apply(row: Int)(col: Int): T =
     values(row + (col*3))
 
-  def *(scale: T)(given Numeric[T]): Matrix3x3[T] =
+  def *(scale: T)(using Numeric[T]): Matrix3x3[T] =
     Matrix3x3(values map (_ * scale))
 
-  def *(vec: Vec3[T])(given Numeric[T]): Vec3[T] = {
+  def *(vec: Vec3[T])(using Numeric[T]): Vec3[T] = {
     import vec.{x,y,z}
     val newX = m11*x + m12*y + m13*z
     val newY = m21*x + m22*y + m23*z
     val newZ = m31*x + m32*y + m33*z
     Vec3(newX, newY, newZ)
   }
-  def *(other: Matrix3x3[T])(given Numeric[T]): Matrix3x3[T] = {
+  def *(other: Matrix3x3[T])(using Numeric[T]): Matrix3x3[T] = {
     // TODO - attempt to use Coppersmith–Winograd algorithm?
     // For now we do this naively, which is possibly more efficeint.
     val next = new Array[T](9)

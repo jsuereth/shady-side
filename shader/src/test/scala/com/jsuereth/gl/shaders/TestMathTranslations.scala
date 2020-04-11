@@ -9,7 +9,7 @@ import com.jsuereth.gl.test.assertCleanEquals
 
 /** This is our target syntax. */
 // Attempt at cel-shading
-import com.jsuereth.gl.math.{given, _}
+import com.jsuereth.gl.math.{given _, _}
 object ExampleShader extends DslShaderProgram {
   // Used for vertex shader
   val lightPosition = Uniform[Vec3[Float]]()

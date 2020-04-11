@@ -15,9 +15,9 @@ class TestBufferLoadable {
         val buf = ByteBuffer.allocate(sizeOf[ExamplePod])
         buf.load(ExamplePod(Vec3(1f,2f,3f), Vec2(4,5), Vec2(true, false)))
         buf.flip
-        assertEquals(1f, buf.getFloat)
-        assertEquals(2f, buf.getFloat)
-        assertEquals(3f, buf.getFloat)
+        assertEquals(1f, buf.getFloat, 0.000001f)
+        assertEquals(2f, buf.getFloat, 0.000001f)
+        assertEquals(3f, buf.getFloat, 0.000001f)
         assertEquals(4, buf.getInt)
         assertEquals(5, buf.getInt)
         assertEquals(1.toByte, buf.get)
@@ -30,7 +30,7 @@ class TestBufferLoadable {
         buf.load(false)
         buf.load(2.toByte)
         buf.flip
-        assertEquals(1f, buf.getFloat)
+        assertEquals(1f, buf.getFloat, 0.00001f)
         assertEquals(2, buf.getInt)
         assertEquals(0.toByte, buf.get)
         assertEquals(2.toByte, buf.get)

@@ -28,7 +28,8 @@ class TestVec3 {
 
   @Test
   def floatOperations(): Unit = {
-    assertEquals("length of vectors",1.0f, Vec3(1.0f, 0.0f, 0.0f).lengthSquared)
+    val err = 0.0001f
+    assertEquals("length of vectors",1.0f, Vec3(1.0f, 0.0f, 0.0f).lengthSquared, err)
     assertEquals("add vectors", Vec3(1.0f, 1.0f, 1.0f), Vec3(0.2f, 1.0f, 0.6f) + Vec3(0.8f, 0.0f, 0.4f))
     // TODO - delta comparison.
     assertEquals("Subtract vectors", Vec3(1.0f, 1.0f, 1.0f), Vec3(1.2f, 1.35f, 0.6f) - Vec3(0.2f, 0.35f, -0.4f))

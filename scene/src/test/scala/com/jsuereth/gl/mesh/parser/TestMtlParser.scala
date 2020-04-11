@@ -28,7 +28,7 @@ class TestMtlParser {
        assertEquals("Parse ambient color", Vec3(0f,0f,1f), mtl.base.ka)
        assertEquals("Parse diffuse color", Vec3(0.64f,0.64f,0.64f), mtl.base.kd)
        assertEquals("Parse specular color", Vec3(0.5f,0.5f,0.5f), mtl.base.ks)
-       assertEquals("Parse specular component", 96.0f, mtl.base.ns)
+       assertEquals("Parse specular component", 96.0f, mtl.base.ns, 0.0000001f)
        assertEquals("Parse diffuse texture file", Some("blue-sky.jpg"), mtl.textures.kd.map(_.filename))
        assertEquals("Not Parse specular texture file", None, mtl.textures.ks.map(_.filename))
        assertEquals("Not Parse ambient texture file", None, mtl.textures.ka.map(_.filename))

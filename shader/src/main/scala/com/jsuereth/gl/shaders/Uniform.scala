@@ -21,8 +21,8 @@ import io.ShaderLoadingEnvironment
 
 /** A marker trait for how we pass data in/out of an open-gl shader. */
 trait Uniform[T] {
-    /** The name we use for the uniform. */
-    def name: String
-    /** Writes  a value into a shader program. */
-    def :=(x: T)(given ShaderLoadingEnvironment): Unit
+  /** The name we use for the uniform. */
+  def name: String
+  /** Writes  a value into a shader program. */
+  def :=(x: T)(using ShaderLoadingEnvironment): Unit
 }

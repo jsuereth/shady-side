@@ -31,24 +31,24 @@ final class Vec3[T : ClassTag](private[this] val values: Array[T]) {
   def z: T = values(2)
 
   /** Piecewise sum this vector with another. */
-  def +(other: Vec3[T])(given Numeric[T]): Vec3[T] = Vec3(x+other.x, y+other.y, z+other.z)
+  def +(other: Vec3[T])(using Numeric[T]): Vec3[T] = Vec3(x+other.x, y+other.y, z+other.z)
   /** Piecewise subtract this vector with another. */
-  def -(other: Vec3[T])(given Numeric[T]): Vec3[T] = Vec3(x-other.x, y-other.y, z-other.z)
+  def -(other: Vec3[T])(using Numeric[T]): Vec3[T] = Vec3(x-other.x, y-other.y, z-other.z)
   /** Piecewise multiple this vector with another. */
-  def *(other: Vec3[T])(given Numeric[T]): Vec3[T] = Vec3[T](x*other.x, y*other.y, z*other.z)
+  def *(other: Vec3[T])(using Numeric[T]): Vec3[T] = Vec3[T](x*other.x, y*other.y, z*other.z)
   /** Multiple a given value against each element of the vector. */
-  def *(quant: T)(given Numeric[T]): Vec3[T] = Vec3(x*quant, y*quant, z*quant)
+  def *(quant: T)(using Numeric[T]): Vec3[T] = Vec3(x*quant, y*quant, z*quant)
 
 
   /** Negates the value of this vector. */
-  def negate(given Numeric[T]): Vec3[T] = Vec3(-x,-y,-z)
+  def negate(using Numeric[T]): Vec3[T] = Vec3(-x,-y,-z)
 
   /** Computes the dot product of this vector with another. */
-  def dot(other: Vec3[T])(given Numeric[T]): T =
+  def dot(other: Vec3[T])(using Numeric[T]): T =
     (x*other.x) + (y*other.y) + (z*other.z)
 
   /** Cross product with another vector. */
-  def cross(other: Vec3[T])(given Numeric[T]): Vec3[T] =
+  def cross(other: Vec3[T])(using Numeric[T]): Vec3[T] =
     Vec3(
       (y*other.z) - (z*other.y),
       (z*other.x) - (x*other.z),
@@ -56,12 +56,12 @@ final class Vec3[T : ClassTag](private[this] val values: Array[T]) {
     )
 
   /** Returns the square of the length of this vector.  More efficient to compute than length. */
-  def lengthSquared(given Numeric[T]): T = this dot this
+  def lengthSquared(using Numeric[T]): T = this dot this
   /** Returns the length of this vector.  Requires a SQRT function. */
-  def length(given Rootable[T], Numeric[T]): T =  sqrt(lengthSquared)
+  def length(using Rootable[T], Numeric[T]): T =  sqrt(lengthSquared)
 
   /** Normalizes this vector.  Note:  This requires a valid SQRT function. */
-  def normalize(given Fractional[T], Rootable[T]): Vec3[T] =
+  def normalize(using Fractional[T], Rootable[T]): Vec3[T] =
     new Vec3[T](Array((x / length), (y / length), (z / length)))
 
 

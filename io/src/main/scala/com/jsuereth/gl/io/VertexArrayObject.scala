@@ -66,7 +66,7 @@ object VertexArrayObject {
      *
      *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(given MemoryStack): VertexArrayObject[T] = {
+    inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(using MemoryStack): VertexArrayObject[T] = {
         val id = glGenVertexArrays()
         glBindVertexArray(id)
         val attrs: Array[VaoAttribute] = vaoAttributes[T]
@@ -87,7 +87,7 @@ object VertexArrayObject {
      *
      *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(given MemoryStack): VertexArrayObject[T] = {
+    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(using MemoryStack): VertexArrayObject[T] = {
         val id = glGenVertexArrays()
         val vertByteSize = sizeOf[T]*vertices.size
         val attrs = vaoAttributes[T]

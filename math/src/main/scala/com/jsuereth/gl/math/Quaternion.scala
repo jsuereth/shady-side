@@ -77,41 +77,41 @@ object Quaternion {
  */ 
 case class Quaternion[T](w: T, x: T, y: T, z: T) {
 
-  def +(other: Quaternion[T])(given Numeric[T]): Quaternion[T] =
+  def +(other: Quaternion[T])(using Numeric[T]): Quaternion[T] =
     Quaternion(w+other.w, other.x+x, other.y+y, other.z+z)
     
-  def -(other: Quaternion[T])(given Numeric[T]): Quaternion[T] =
+  def -(other: Quaternion[T])(using Numeric[T]): Quaternion[T] =
     Quaternion(w-other.w, x-other.x, y-other.y, z-other.z)
         
-  def *(scalar: T)(given Numeric[T]): Quaternion[T] =
+  def *(scalar: T)(using Numeric[T]): Quaternion[T] =
     Quaternion(w*scalar, x*scalar, y*scalar, z*scalar)
     
   /** Hamilton product.  This is similar to multiplying two rotation matrices together. */
-  def *(other:Quaternion[T])(given Numeric[T]): Quaternion[T] = {
-      val newW = 
-        w*other.w - x*other.x - y*other.y - z*other.z
-      val newX =
-        w*other.x + x*other.w + y*other.z - z*other.y
-      val newY =
-        w*other.y - x*other.z + y*other.w + z*other.x
-      val newZ =
-        w*other.z + x*other.y - y*other.x + z*other.w
-     Quaternion(newW, newX, newY, newZ)
+  def *(other:Quaternion[T])(using Numeric[T]): Quaternion[T] = {
+    val newW = 
+      w*other.w - x*other.x - y*other.y - z*other.z
+    val newX =
+      w*other.x + x*other.w + y*other.z - z*other.y
+    val newY =
+      w*other.y - x*other.z + y*other.w + z*other.x
+    val newZ =
+      w*other.z + x*other.y - y*other.x + z*other.w
+    Quaternion(newW, newX, newY, newZ)
   }
   
   // Defined as rotating the vector by this quaternion.
-  def *(other: Vec3[T])(given ClassTag[T], Fractional[T], Rootable[T]): Vec3[T] = {
+  def *(other: Vec3[T])(using ClassTag[T], Fractional[T], Rootable[T]): Vec3[T] = {
     val result =
       this * Quaternion.fromVector(other) * this.conjugate
     Vec3(result.x, result.y, result.z)
   }
   
-  def conjugate(given Numeric[T]): Quaternion[T] =
+  def conjugate(using Numeric[T]): Quaternion[T] =
      Quaternion(w, -x, -y, -z);
   
-  def normSquared(given Numeric[T]): T = w*w + x*x + y*y + z*z
+  def normSquared(using Numeric[T]): T = w*w + x*x + y*y + z*z
   
-  def normalize(given Rootable[T], Fractional[T]): Quaternion[T] = {
+  def normalize(using Rootable[T], Fractional[T]): Quaternion[T] = {
     val ns = normSquared
     // Here is  a danger mechanism to avoid crazy divisions
     // What we really want is a better "near" function for floating point numbers.
@@ -122,10 +122,10 @@ case class Quaternion[T](w: T, x: T, y: T, z: T) {
     //} else this
   }
   
-  def toMatrix(given ClassTag[T], Rootable[T], Ordering[T], Fractional[T]): Matrix4[T] = normalize.toMatrixFromNorm
+  def toMatrix(using ClassTag[T], Rootable[T], Ordering[T], Fractional[T]): Matrix4[T] = normalize.toMatrixFromNorm
   
   // This did not translate correctly...
-  private def toMatrixFromNorm(given ClassTag[T], Ordering[T], Fractional[T]): Matrix4x4[T] = {
+  private def toMatrixFromNorm(using ClassTag[T], Ordering[T], Fractional[T]): Matrix4x4[T] = {
     val Nq = normSquared
     val s = if(summon[Ordering[T]].gt(Nq, zero)) two else zero
     val X = x*s; val Y = y*s; val Z = z*s

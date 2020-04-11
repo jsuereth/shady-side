@@ -8,7 +8,7 @@ import com.jsuereth.gl.test.assertCleanEquals
 
 /** This is our target syntax. */
 // Attempt at cel-shading
-import com.jsuereth.gl.math.{given, _}
+import com.jsuereth.gl.math.{given _, _}
 object ExampleCartoonShader extends DslShaderProgram {
   // Used for vertex shader
   val modelMatrix = Uniform[Matrix4[Float]]()
@@ -49,7 +49,7 @@ object ExampleCartoonShader extends DslShaderProgram {
 }
 
 
-class Test1 {
+class TestSimpleShaderGeneration {
   @Test def extractCartoonVertexShader(): Unit = {
     assertCleanEquals(
 """#version 300 es
@@ -95,7 +95,9 @@ void main() {
   float light = (edgeDetection * (diffuse + specular));
   color = vec4(light,light,light,1.0);
 }""", ExampleCartoonShader.fragmentShaderCode)
+  }
 
+  @Test def extractsUniformNames(): Unit = {
     assertEquals("modelMatrix", ExampleCartoonShader.modelMatrix.name)
     assertEquals("lightPosition", ExampleCartoonShader.lightPosition.name)
   }

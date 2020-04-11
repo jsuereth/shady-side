@@ -15,7 +15,7 @@
  */
 
 import com.jsuereth.gl.shaders._
-import com.jsuereth.gl.math.{given, _}
+import com.jsuereth.gl.math.{given _, _}
 import com.jsuereth.gl.texture.Texture2D
 import com.jsuereth.gl.io.ShaderUniformLoadable
 

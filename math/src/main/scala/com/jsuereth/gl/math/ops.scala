@@ -19,17 +19,18 @@ package com.jsuereth.gl.math
 import scala.math.Numeric
 import scala.math.Fractional
 
-
-// Remove implicit conversion warning....
-
-given MyNumericOps: {
-  def (x: T) +[T](y: T)(given n: Numeric[T]): T = n.plus(x,y)
-  def (x: T) -[T](y: T)(given n: Numeric[T]): T = n.minus(x,y)
-  def (x: T) *[T](y: T)(given n: Numeric[T]): T = n.times(x,y)
-  def (x: T) unary_-[T](given n: Numeric[T]): T = n.negate(x)
+extension ops on [T](x: T)(using n: Numeric[T]) {
+  def +(y: T): T = n.plus(x,y)
+  def -(y: T): T = n.minus(x,y)
+  def *(y: T): T = n.times(x,y)
+  // Open bug about this not working.
+  def unary_- = n.negate(x)
 }
-given MyFractionalOps: {
-  def (x: T) /[T](y: T)(given f: Fractional[T]): T = f.div(x,y)
+
+def [T](x: T) unary_-(using n: Numeric[T]): T = n.negate(x)
+
+extension fractionalOps on [T](x: T)(using f: Fractional[T]) {
+  def /(y: T) = f.div(x, y)
 }
 
 def zero[T: Numeric]: T = summon[Numeric[T]].zero
