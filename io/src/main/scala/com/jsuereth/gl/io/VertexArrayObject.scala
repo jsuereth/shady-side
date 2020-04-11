@@ -44,81 +44,104 @@ import java.nio.ByteBuffer
 /**
  * Represents a vertex array object stored in graphics memory.
  *
- * The object stores vertex data of type VertexType.  The layout
- * is determined via the {{vaoAttributes[VertexType]}} method.
+ * The object stores vertex information via VertexBufferObjects.
+ *
+ * These may be attached to a VAO.
  */
-trait VertexArrayObject[VertexType] extends GLBuffer {
-    /** Binds this VAO for usage. */
-    def bind(): Unit = glBindVertexArray(id)
-    /** Removes this VAO from being used. */
-    def unbind(): Unit = glBindVertexArray(0)
-    /** Renders the VAO through a shader pipeline. */
-    def draw(): Unit
+final class VertexArrayObject(id: Int) extends GpuObject {
+  def bind(): Unit = glBindVertexArray(id)
+  /** Removes this VAO from being used. */
+  def unbind(): Unit = glBindVertexArray(0)
+  /** The set of all attached VBOs. */
+  private val attached = collection.mutable.ArrayBuffer[Attached]()
+  private var renderWithIndices: Boolean = false
 
-    // TODO - Clean VBOs?
-    override def close(): Unit = glDeleteVertexArrays(id)
+  /** This class represents a VBO that has been attached to this VAO. */
+  final case class Attached(vbo: VertexBufferObject, attributes: Array[VaoAttribute]) {
+    /** Bind the attributes of a VBO in a VAO prior to usage. */
+    def bindAttributes(): Unit = 
+      for {
+        a <- attributes
+      } glEnableVertexAttribArray(a.idx)
+    def hasAttributes: Boolean = !attributes.isEmpty
+
+    override def toString(): String = s"$vbo[${attributes.mkString(", ")}]"
+  }
+
+  /** 
+   * Attaches the given VBO to this VAO, using the speciified attribtues. 
+   * 
+   * Note: this does NOT ensure uniqueness of attributes.
+   */
+  def attach(vbo: VertexBufferObject, attributes: Array[VaoAttribute] = Array.empty): Attached = {
+    bind()
+    vbo.bind()
+    attributes.foreach(_.define())
+    renderWithIndices = renderWithIndices || vbo.isIndex
+    // TODO - do we store the VAO?
+    val result = Attached(vbo, attributes)
+    attached.append(result)
+    result
+  }
+  /** 
+    * Send this VAO through shaders.
+    *
+    * This is a helper, and does not need to be used. Generally, clinets will know
+    * better how to render data within their VAOs, but this method aids quick demos.
+    *
+    * Implementation notes:
+    * 
+    * - Assumes all index buffers are GL_UNSIGNED_INT
+    * - Always draws from index 0 to count.
+    * - Always binds the VAO prior to a `glDraw*` call
+    * - Always unbinds
+    */
+  def draw(count: Int, drawMode: Int = GL_TRIANGLES): Unit = {
+    bind()
+    attached.foreach(_.bindAttributes())
+    if(renderWithIndices)  glDrawElements(drawMode, count, GL_UNSIGNED_INT, 0)
+    else glDrawArrays(drawMode, 0, count)
+    unbind()
+  }
+
+  override def free(): Unit = {
+    // TODO - ensure only-once removal...
+    attached.foreach(_.vbo.free())
+    glDeleteVertexArrays(id)
+  }
+
+  override def toString(): String = 
+    s"VAO($id, attached=[${attached.mkString(", ")}])"
 }
 object VertexArrayObject {
     /** Loads a VAO whose elements will align with the passed in type.
      *  @tparam T the plain-old-data type (case class) where each member becomes one of the vertex attribute pointers in this VAO.
      *  @param vertices A sequence of all the verticies to load into graphics memory.
      *  @param indicies A set of indicies to refereence in the vertex array when drawing geometry.
-     *
-     *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(using MemoryStack): VertexArrayObject[T] = {
-        val id = glGenVertexArrays()
-        glBindVertexArray(id)
+   inline def loadWithIndex[T : BufferLoadable](vertices: Seq[T], indices: Seq[Int])(using MemoryStack): VertexArrayObject = {
+        val vao = VertexArrayObject(glGenVertexArrays())
+        vao.bind()
         val attrs: Array[VaoAttribute] = vaoAttributes[T]
         // Create the Vertex data
-        val vboVertex = glGenBuffers()
-        glBindBuffer(GL_ARRAY_BUFFER, vboVertex)
-        withLoadedBuf(vertices)(glBufferData(GL_ARRAY_BUFFER, _, GL_STATIC_DRAW))
-        attrs.foreach(_.define())
+        val vertexBuf = VertexBufferObject.loadStatic(vertices)
+        vao.attach(vertexBuf, attrs)
         // Now create the index buffer.
-        val vboIndex = glGenBuffers()
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndex)
-        withLoadedBuf(indices)(glBufferData(GL_ELEMENT_ARRAY_BUFFER, _, GL_STATIC_DRAW))
-        IndexedVertexArrayObject(id, attrs, indices.size)
+        val indexBuf = VertexBufferObject.loadStaticIndex(indices)
+        vao.attach(indexBuf)
+        vao
     }
     /** Loads a VAO whose elements will align with the passed in type.
      *  @tparam T the plain-old-data type (case class) where each member becomes one of the vertex attribute pointers in this VAO.
      *  @param vertices A sequence of all the verticies to load into graphics memory.
-     *
-     *  Note: This assumes TRIANGLES are being sent for drawing.
      */
-    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(using MemoryStack): VertexArrayObject[T] = {
-        val id = glGenVertexArrays()
-        val vertByteSize = sizeOf[T]*vertices.size
-        val attrs = vaoAttributes[T]
-        glBindVertexArray(id)
-        val vboVertex = glGenBuffers()
-        glBindBuffer(GL_ARRAY_BUFFER, vboVertex)
-        withLoadedBuf(vertices)(glBufferData(GL_ARRAY_BUFFER, _, GL_STATIC_DRAW))
-        attrs.foreach(_.define())
-        RawVertexArrayObject(id, attrs, vertices.size)
+    inline def loadRaw[T : BufferLoadable](vertices: Seq[T])(using MemoryStack): VertexArrayObject = {
+        val vao = VertexArrayObject(glGenVertexArrays())
+        vao.bind()
+        val attrs: Array[VaoAttribute] = vaoAttributes[T]
+        // Create the Vertex data
+        val vertexBuf = VertexBufferObject.loadStatic(vertices)
+        vao.attach(vertexBuf, attrs)
+        vao
     }
-}
-/** This class can render a VAO where vertex data is rendered in order. */
-class RawVertexArrayObject[VertexType](override val id: Int, 
-                                    attrs: Array[VaoAttribute], 
-                                    vertexCount: Int,
-                                    drawMode: Int = GL_TRIANGLES) extends VertexArrayObject[VertexType] {
-  def draw(): Unit = withBound {
-    attrs.iterator.map(_.idx).foreach(glEnableVertexAttribArray(_))  
-    glDrawArrays(drawMode, 0, vertexCount)
-  }
-  override def close(): Unit = glDeleteVertexArrays(id)
-}
-
-/** This class can render a VAO where you load vertex data separately from index data. */
-class IndexedVertexArrayObject[VertexType](override val id: Int,
-                                        attrs: Array[VaoAttribute],
-                                        indexCount: Int,
-                                        drawMode: Int = GL_TRIANGLES) extends VertexArrayObject[VertexType] {
-  def draw(): Unit = withBound {
-    attrs.iterator.map(_.idx).foreach(glEnableVertexAttribArray(_))
-    // TODO openGL index type...
-    glDrawElements(drawMode, indexCount, GL_UNSIGNED_INT, 0)
-  }
 }

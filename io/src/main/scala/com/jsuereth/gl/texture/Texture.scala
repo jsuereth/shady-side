@@ -45,7 +45,7 @@ sealed trait Texture extends io.GLBuffer {
     /** The id of the texture in OpenGL. */
     def id: Int
 
-    override def close(): Unit = glDeleteTextures(id)
+    def close(): Unit = glDeleteTextures(id)
 }
 object Texture {
     // TODO - loading methods for various formats.

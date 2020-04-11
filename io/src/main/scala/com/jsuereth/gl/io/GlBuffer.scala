@@ -21,7 +21,7 @@ import org.lwjgl.opengl.GL30.{GL_FRAMEBUFFER,glBindFramebuffer,glGenFramebuffers
 
 
 /** A helper to represent a buffer in OpenGL.  We can load things into this buffer. */
-trait GLBuffer extends AutoCloseable {
+trait GLBuffer {
     /* The ID of the buffer object.  This makes no sense to use unless you know the type of buffer (FBO/VBO). */
     def id: Int
     // all instances should have an inline "with"

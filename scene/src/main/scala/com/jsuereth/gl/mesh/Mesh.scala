@@ -85,10 +85,17 @@ trait Mesh3d {
 
     // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
     /** Loads this mesh into a VAO that can be rendered. */
-    def loadVao(using MemoryStack): VertexArrayObject[MeshPoint] = {
-      // TODO - Figure out if triangles or quads.
-      VertexArrayObject.loadWithIndex(points, idxes)
+    def load(using MemoryStack): LoadedMesh = {
+     LoadedMesh(this, VertexArrayObject.loadWithIndex(points, idxes), idxes.length);
     }
+}
+
+/** A mesh which has been loaded into the GPU. */
+class LoadedMesh(mesh: Mesh3d, vao: VertexArrayObject, count: Int) {
+  // TODO - Figure out if triangles or quads.
+  def draw(): Unit = vao.draw(count)
+
+  // TODO - clean?
 }
 
 object Mesh3d {

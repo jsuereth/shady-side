@@ -171,7 +171,7 @@ object Main {
           done()
         val projectionMatrix = 
           Matrix4.perspective(45f, WIDTH.toFloat/HEIGHT.toFloat, 1f, 200f) 
-        val vao = withMemoryStack(mesh.loadVao)
+        val loadedMesh = withMemoryStack(mesh.load)
         CartoonShader.load()
 
         System.out.println("-- Shader struct debug --")
@@ -209,7 +209,7 @@ object Main {
                     CartoonShader.materialKs := 0.4f
                     CartoonShader.modelMatrix := o.modelMatrix
                     // TODO - pull the VAO for the model.
-                    vao.draw()
+                    loadedMesh.draw()
                     env.pop()
                 }
             }
