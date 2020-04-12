@@ -76,5 +76,4 @@ case class TextureOptions(
     clamp: Boolean = false,
     bumpMultiplier: Float = 1f
     // TODO image channel for bump-maps.
-
 )

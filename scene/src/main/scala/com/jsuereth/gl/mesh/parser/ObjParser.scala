@@ -81,9 +81,8 @@ class ObjFileParser {
   private var meshes = collection.mutable.Map[String, ParsedObj]()
   private var materialLibRefs = collection.mutable.ArrayBuffer[String]()
 
-  def parse(in: File): ParsedObjects = {
+  def parse(in: File): ParsedObjects =
     parse(java.io.FileInputStream(in))
-  }
 
   def parse(in: InputStream): ParsedObjects = {
     try readStream(in)

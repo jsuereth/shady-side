@@ -30,7 +30,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd foil_n.png
+map_Kd texture/foil_n.png
 map_Bump texture/foil_n.png
 
 newmtl foil_gold
@@ -42,7 +42,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd foil_n.png
+map_Kd texture/foil_n.png
 map_Bump -bm 0.450000 texture/foil_n.png
 refl texture/foil_gold_ramp.png
 

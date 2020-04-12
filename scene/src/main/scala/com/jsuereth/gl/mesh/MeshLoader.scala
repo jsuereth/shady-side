@@ -47,7 +47,9 @@ class MeshLoader(resources: MeshResourceLookup = ClassloaderResourceLookup()) {
       val path = java.nio.file.Paths.get(orig)
       val sib = path.resolveSibling(ref)
       // Hack so we don't use windows file layout for classloaders.
-      (0 until sib.getNameCount).map(sib.getName).mkString("/")
+      val result = (0 until sib.getNameCount).map(sib.getName).mkString("/")
+      if (ref endsWith ".png") System.err.println(s"Relativized texture $ref to $result")
+      result
     }
     def relativizeRef(texture: TextureReference): TextureReference =
       texture.copy(filename = relativeTo(texture.filename, location))

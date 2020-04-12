@@ -73,7 +73,7 @@ private class SimpleActiveTextures(maxIndex: Int) extends ActiveTextures {
     private val MaxDepth = 100
     private val used: ArrayBuffer[Int] = (0 until maxIndex).map(_ => 100).to(ArrayBuffer)
     /** Create a new "record" of what textures were used. */
-    def push(): Unit = depth = Math.max(MaxDepth, depth+1)
+    def push(): Unit = depth = Math.min(MaxDepth, depth+1)
     /** Open up all textures for usage from the last "pop" */
     def pop(): Unit = depth = Math.max(0, depth-1)
     def release(idx: ActiveTextureIndex): Unit = used(unwrap(idx)) = MaxDepth
@@ -83,6 +83,8 @@ private class SimpleActiveTextures(maxIndex: Int) extends ActiveTextures {
         case Some((_, idx)) => 
           used(idx) = depth
           wrap(idx)
-        case None => throw RuntimeException("No more textures available!")
+        case None =>
+          throw RuntimeException(
+            s"No more textures available! depth: $depth\nused: $used")
       }
 }

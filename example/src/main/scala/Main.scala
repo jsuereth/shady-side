@@ -47,7 +47,28 @@ object Main {
     var window: Long = 0
     var scene: Scene = null
 
-    val meshLoader = MeshLoader(ClassloaderResourceLookup(this.getClass.getClassLoader))
+    val meshLoader = MeshLoader(ClassloaderResourceLookup(Main.getClass.getClassLoader))
+    /** A quick hacky texture manager that just loads + remembers by file name. */
+    object TextureManager {
+        private val textures = collection.mutable.Map.empty[String, Texture2D]
+
+        private def load(location: String): Texture2D = {
+            val in = Main.getClass.getClassLoader.getResourceAsStream(location)
+            if (in == null) throw new RuntimeException(s"Unable to load texture @ $location")
+            try Texture.loadImage(in)
+            finally in.close()
+        }
+
+        def get(location: String): Texture2D =
+          textures.get(location) match {
+              case Some(value) => value
+              case None =>
+                System.err.println(s"Loading texture: $location")
+                val texture = load(location)
+                textures.put(location, texture)
+                texture
+          }
+    }
 
 
     def run(): Unit = {
@@ -160,10 +181,8 @@ object Main {
         for ((name, mesh) <- models) {
             System.err.println(s" - Loaded model [$name]: $mesh")
         }
-        val mesh = models.iterator.next._2
-          
-        val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/texture/foil_silver_ramp.png"))
-        
+        // Preload textures.
+        val mesh = models.iterator.next._2 
         val scaleFactor = 1f  
         // TODO - start rendering using the scene...
         scene = SimpleStaticSceneBuilder().
@@ -187,10 +206,19 @@ object Main {
 
         def meshRenderCtx(using ShaderLoadingEnvironment): MeshRenderContext =
             new MeshRenderContext {
+                // This is evil...
                 def applyMaterial(material: RawMaterial): Unit = {
+                    summon[ShaderLoadingEnvironment].pop()
+                    summon[ShaderLoadingEnvironment].push()
                     CartoonShader.materialShininess := material.base.ns
                     CartoonShader.materialKd := material.base.kd
                     CartoonShader.materialKs := material.base.ks
+                    material.textures.kd match {
+                        case Some(ref) =>
+                             CartoonShader.materialKdTexture := 
+                                TextureManager.get(ref.filename)
+                        case None => ()
+                    }
                 }
             }
 
@@ -202,18 +230,17 @@ object Main {
             glCullFace(GL_BACK)
             glEnable(GL_TEXTURE)
             glEnable(GL_TEXTURE_2D)
-
             CartoonShader.bind()
             withMemoryStack {
                 given env as ShaderLoadingEnvironment {
                     val stack = summon[MemoryStack]
                     val textures = ActiveTextures()
                 }
+                env.push()
                 CartoonShader.world := WorldData(light = scene.lights.next,
                                                  eye = scene.camera.eyePosition,
                                                  view = scene.camera.viewMatrix,
                                                  projection = projectionMatrix)
-                CartoonShader.materialKdTexture := uglyTexture
                 val ctx = meshRenderCtx
                 for (o <- scene.objectsInRenderOrder) {
                     env.push()
@@ -222,6 +249,7 @@ object Main {
                     loadedMesh.render(ctx)
                     env.pop()
                 }
+                env.pop()
             }
         }
         
