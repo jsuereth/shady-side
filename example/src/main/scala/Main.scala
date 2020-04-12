@@ -33,6 +33,7 @@ import com.jsuereth.gl.io.{
 import org.lwjgl.system.MemoryStack
 import com.jsuereth.gl.mesh.parser.ObjFileParser
 import com.jsuereth.gl.scene._
+import com.jsuereth.gl.mesh._
 import com.jsuereth.gl.texture.{
     Texture,
     Texture2D
@@ -154,11 +155,11 @@ object Main {
         // Load models and shader.
         val models = ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/deep_space_1_11.obj"))
         System.out.println("Done loading models!")
-        for ((name, mesh) <- models) {
-            System.err.println(s" - Loaded model [$name] w/ ${mesh.vertices.size} vertices, ${mesh.normals.size} normals, ${mesh.textureCoords.size} texcoords, ${mesh.faces.size} faces")
+        for ((name, mesh) <- models.objects) {
+            System.err.println(s" - Loaded model [$name] w/ ${mesh.vertices.size} vertices, ${mesh.normals.size} normals, ${mesh.textureCoords.size} texcoords, ${mesh.groups}")
         }
-        val mesh =
-          models.iterator.next._2
+        val mesh = bake(models.objects.iterator.next._2)
+          
         val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/texture/foil_silver_ramp.png"))
         
         val scaleFactor = 1f  
@@ -171,7 +172,7 @@ object Main {
           done()
         val projectionMatrix = 
           Matrix4.perspective(45f, WIDTH.toFloat/HEIGHT.toFloat, 1f, 200f) 
-        val loadedMesh = withMemoryStack(mesh.load)
+        val loadedMesh = withMemoryStack(load(mesh))
         CartoonShader.load()
 
         System.out.println("-- Shader struct debug --")
@@ -180,6 +181,16 @@ object Main {
         System.out.println(s" world.eye: ${CartoonShader.debugUniform("world.eye")}")
         System.out.println(s" world.view: ${CartoonShader.debugUniform("world.view")}")
         System.out.println(s" world.projection: ${CartoonShader.debugUniform("world.projection")}")
+
+
+        def meshRenderCtx(using ShaderLoadingEnvironment): MeshRenderContext =
+            new MeshRenderContext {
+                def applyMaterial(material: RawMaterial): Unit = {
+                    CartoonShader.materialShininess := 1.3f
+                    CartoonShader.materialKd := 0.5f
+                    CartoonShader.materialKs := 0.4f
+                }
+            }
 
         // Render a scene using cartoon shader.
         def render(): Unit = {
@@ -201,15 +212,12 @@ object Main {
                                                  view = scene.camera.viewMatrix,
                                                  projection = projectionMatrix)
                 CartoonShader.materialKdTexture := uglyTexture
+                val ctx = meshRenderCtx
                 for (o <- scene.objectsInRenderOrder) {
                     env.push()
-                    // TODO - pull material from objects.
-                    CartoonShader.materialShininess := 1.3f
-                    CartoonShader.materialKd := 0.5f
-                    CartoonShader.materialKs := 0.4f
                     CartoonShader.modelMatrix := o.modelMatrix
                     // TODO - pull the VAO for the model.
-                    loadedMesh.draw()
+                    loadedMesh.render(ctx)
                     env.pop()
                 }
             }

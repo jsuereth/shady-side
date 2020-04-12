@@ -17,7 +17,7 @@
 package com.jsuereth.gl
 package scene
 
-import mesh.Mesh3d
+import mesh.BakedMesh
 import math.{given _, _}
 /** 
  * Represents an object in the scene. 
@@ -27,7 +27,7 @@ import math.{given _, _}
  */
 trait SceneObject {
   /** The mesh representing this object. */
-  def mesh: Mesh3d
+  def mesh: BakedMesh
   /** The current position of hte object. */
   def pos: Vec3[Float]
   /** The orientation of the object.  We use a quaternion to save space on rotational axes. */
@@ -41,4 +41,4 @@ trait SceneObject {
 /**
  * A static, unomving object within the scene.
  */
-case class StaticSceneObject(mesh: Mesh3d, pos: Vec3[Float], orientation: Quaternion[Float] = Quaternion.identity, scale: Vec3[Float]) extends SceneObject
+case class StaticSceneObject(mesh: BakedMesh, pos: Vec3[Float], orientation: Quaternion[Float] = Quaternion.identity, scale: Vec3[Float]) extends SceneObject

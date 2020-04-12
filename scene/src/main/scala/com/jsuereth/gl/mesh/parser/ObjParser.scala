@@ -22,6 +22,7 @@ package parser
 import java.io.{File, InputStream}
 import math.{Vec2,Vec3, given _}
 
+
 /** A mesh that has been parsed from an ObjFile. */
 final case class ParsedObj(
   /** Vertices that have been parsed. */
@@ -43,7 +44,10 @@ final case class ParsedGroup(
   /** The material (by name) to use when rendering this group. */
   materialRef: Option[String],
   /** The faces in this portion of the object. */
-  faces: Seq[Face])
+  faces: Seq[ParsedFace]) {
+    override def toString(): String =
+      s"ParsedGroup($name, faceCount: ${faces.length})"
+  }
 
 /** The result of parsing a `.obj` file. */
 final case class ParsedObjects(
@@ -52,6 +56,15 @@ final case class ParsedObjects(
   /** Material libraries that should be loaded from this file. */
   materialLibRefs: Seq[String]
 )
+
+/** Faces as we can parse them from OBJ files, prior to 'baking' a model. */
+enum ParsedFace {
+  case Triangle(one: ParsedFaceIndex, two: ParsedFaceIndex, three: ParsedFaceIndex)
+  case Quad(one: ParsedFaceIndex, two: ParsedFaceIndex, three: ParsedFaceIndex, four: ParsedFaceIndex)
+}
+/** Index reference into a Mesh3d for a face-definition. */
+final case class ParsedFaceIndex(vertix: Int, texture: Int, normal: Int)
+
 
 object ObjFileParser {
   def parse(in: File): ParsedObjects =
@@ -122,7 +135,7 @@ class ObjMeshParser() {
   private var vertices = collection.mutable.ArrayBuffer.empty[Vec3[Float]]
   private var normals = collection.mutable.ArrayBuffer.empty[Vec3[Float]]
   private var textureCoords = collection.mutable.ArrayBuffer.empty[Vec2[Float]]
-  private var faces = collection.mutable.ArrayBuffer.empty[Face]
+  private var faces = collection.mutable.ArrayBuffer.empty[ParsedFace]
   private var groups = collection.mutable.ArrayBuffer.empty[ParsedGroup]
   private var currentMaterial: Option[String] = None
   private var currentGroupName: Option[String] = None
@@ -147,6 +160,8 @@ class ObjMeshParser() {
     currentGroupName = Some(name)
   }
   private def addGroupAndClearData(): Unit = if (!faces.isEmpty) {
+    // Note: if we synthesize normals we need to make triangleshere.
+    // we COULD move that logic into baking, perhaps we should.
     val myFaces = makeTriangles(faces.iterator)
     val result = ParsedGroup(
       currentGroupName.getOrElse(s"group-${groups.length}"),
@@ -156,13 +171,13 @@ class ObjMeshParser() {
     groups.append(result)
     currentGroupName = None
     currentMaterial = None
-    faces = collection.mutable.ArrayBuffer.empty[Face]
+    faces = collection.mutable.ArrayBuffer.empty[ParsedFace]
   }
   /** unifies faces to all be triangles. */
-  private def makeTriangles(faces: Iterator[Face]): Seq[TriangleFace] =
+  private def makeTriangles(faces: Iterator[ParsedFace]): Seq[ParsedFace] =
     faces.flatMap {
-      case x: TriangleFace => Seq(x)
-      case QuadFace(one,two,three,four) => Seq(TriangleFace(one,two,three), TriangleFace(three, four, one))
+      case x: ParsedFace.Triangle => Seq(x)
+      case ParsedFace.Quad(one,two,three,four) => Seq(ParsedFace.Triangle(one,two,three), ParsedFace.Triangle(three, four, one))
     }.toSeq
 
   def obj: ParsedObj = {
@@ -179,7 +194,7 @@ class ObjMeshParser() {
 
   // TODO - update this to use the groups...
   private def generateNormalsForGroup(group: ParsedGroup): ParsedGroup = {
-    for (TriangleFace(one,two,three) <- group.faces) {
+    for (ParsedFace.Triangle(one,two,three) <- group.faces) {
           val A = vertices(one.vertix-1)
           val B = vertices(two.vertix-1)
           val C = vertices(three.vertix-1)
@@ -190,8 +205,8 @@ class ObjMeshParser() {
         }
     val newFaces =        
       for {
-        TriangleFace(one,two,three) <- group.faces
-      } yield TriangleFace(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
+        ParsedFace.Triangle(one,two,three) <- group.faces
+      } yield ParsedFace.Triangle(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
     group.copy(faces = newFaces.toSeq)
   }
 
@@ -205,21 +220,21 @@ class ObjMeshParser() {
 }
 
 private[mesh] object F {
-  def unapply(face: Seq[String]): Option[Face] =
+  def unapply(face: Seq[String]): Option[ParsedFace] =
     face match {
-      case Seq(FI(one), FI(two), FI(three)) => Some(TriangleFace(one,two,three))
-      case Seq(FI(one), FI(two), FI(three), FI(four)) => Some(QuadFace(one,two,three,four))
+      case Seq(FI(one), FI(two), FI(three)) => Some(ParsedFace.Triangle(one,two,three))
+      case Seq(FI(one), FI(two), FI(three), FI(four)) => Some(ParsedFace.Quad(one,two,three,four))
       case _ => None
    }
 }
 
 private[mesh] object FI {
-  def unapply(face: String): Option[FaceIndex] =
+  def unapply(face: String): Option[ParsedFaceIndex] =
     face split "/" match {
-      case Array(It(one)) => Some(FaceIndex(one, 0, 0))
-      case Array(It(one), It(two)) => Some(FaceIndex(one, two, 0))
-      case Array(It(one), It(two), It(three)) =>  Some(FaceIndex(one, two, three))
-      case Array(It(one), "", It(three)) =>  Some(FaceIndex(one, 0, three))
+      case Array(It(one)) => Some(ParsedFaceIndex(one, 0, 0))
+      case Array(It(one), It(two)) => Some(ParsedFaceIndex(one, two, 0))
+      case Array(It(one), It(two), It(three)) =>  Some(ParsedFaceIndex(one, two, three))
+      case Array(It(one), "", It(three)) =>  Some(ParsedFaceIndex(one, 0, three))
       case _ => None 
     }
 }

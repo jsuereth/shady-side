@@ -19,7 +19,7 @@ package scene
 
 import math.{Vec3, Quaternion}
 import collection.mutable.ArrayBuffer
-import mesh.Mesh3d
+import mesh.BakedMesh
 /** 
  * Defines the base of a renderable scene. 
  * 
@@ -66,9 +66,9 @@ class SimpleStaticSceneBuilder {
       this.os += obj
       this
   }
-  def add(mesh: Mesh3d): ObjBuilder = ObjBuilder(mesh)
+  def add(mesh: BakedMesh): ObjBuilder = ObjBuilder(mesh)
 
-  class ObjBuilder(mesh: Mesh3d) {
+  class ObjBuilder(mesh: BakedMesh) {
       private[this] var p = Vec3(0f,0f,0f)
       private[this] var o = Quaternion.identity[Float]
       private[this] var s = Vec3(1f,1f,1f)

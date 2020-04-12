@@ -48,7 +48,11 @@ class TestObjParser {
         val group = mesh.groups(0)
         assertEquals(s"Failed to find faces in group ${group.name}", 1, group.faces.size)
         // Texture coordinates are 0, normal is synthesized
-        assertEquals(TriangleFace(FaceIndex(1,0,1), FaceIndex(2,0,2), FaceIndex(3,0,3)), group.faces.head)
+        assertEquals(ParsedFace.Triangle(
+            ParsedFaceIndex(1,0,1),
+            ParsedFaceIndex(2,0,2),
+            ParsedFaceIndex(3,0,3)),
+            group.faces.head)
     }
     @Test def parseMultiObjectMesh(): Unit = {
         val parse = ObjFileParser.parse(stream("""|
@@ -74,7 +78,11 @@ class TestObjParser {
         val mesh = parse.objects("test")
         assertEquals(1, mesh.groups.length)
         val group = mesh.groups(0)
-        assertEquals(TriangleFace(FaceIndex(1,0,1), FaceIndex(2,0,1), FaceIndex(3,0,1)), group.faces.head)
+        assertEquals(ParsedFace.Triangle(
+            ParsedFaceIndex(1,0,1),
+            ParsedFaceIndex(2,0,1),
+            ParsedFaceIndex(3,0,1)),
+            group.faces.head)
         assertEquals(3, mesh.vertices.size)
         assertEquals("Parse first point", Vec3(1f,0f,1f), mesh.vertices(0))
         assertEquals("Parse second point", Vec3(0f,0f,1f), mesh.vertices(1))
