@@ -33,6 +33,7 @@ object CartoonShader extends DslShaderProgram {
   val materialKdTexture = Uniform[Texture2D]()
 
   val (vertexShaderCode, fragmentShaderCode) = defineShaders {
+    // TODO - we want Input => MeshPoint directly.
     val inPosition = Input[Vec3[Float]](location=0)
     val inNormal = Input[Vec3[Float]](location=1)
     val texPosition = Input[Vec2[Float]](location=2)

@@ -49,12 +49,16 @@ class MeshLoader(resources: MeshResourceLookup = ClassloaderResourceLookup()) {
       // Hack so we don't use windows file layout for classloaders.
       (0 until sib.getNameCount).map(sib.getName).mkString("/")
     }
-
+    def relativizeRef(texture: TextureReference): TextureReference =
+      texture.copy(filename = relativeTo(texture.filename, location))
+    def relativize(textures: MaterialTextures): MaterialTextures =
+      textures.mapRefs(relativizeRef)
+    // Create lookups for materials.
     val materialLookups = 
       (for {
         lib <- parse.materialLibRefs
         (name, mtl) <- resources.read(relativeTo(lib, location))(parser.MtlFileParser.parse)
-      } yield name -> mtl).toMap
+      } yield name -> mtl.copy(textures = relativize(mtl.textures))).toMap
     for ((name, raw) <- parse.objects)
     yield name -> bake(raw, materialLookups)
   }

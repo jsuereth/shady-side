@@ -46,7 +46,17 @@ case class MaterialTextures(
     ns: Option[TextureReference] = None,
     d: Option[TextureReference] = None,
     bump: Option[TextureReference] = None
-)
+) {
+    def mapRefs(f: TextureReference => TextureReference): MaterialTextures =
+      copy(
+        ka = ka map f,
+        kd = kd map f,
+        ks = ks map f,
+        ns = ns map f,
+        d = d map f,
+        bump = bump map f
+      )
+}
 
 
 /** A referernce to a texture, including texture options. */
