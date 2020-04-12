@@ -68,15 +68,31 @@ def load(mesh: BakedMesh)(using MemoryStack): RenderableMesh = {
     groups = groups.toArray)
 }
 
+/** The information we need to render a portion of
+ *  a mesh.
+ */
 final class RenderableMeshGroup(
+  /** 
+   * An index/pointer to the start of this group.
+   * (0-offset), in bytes.
+   */
   val startPtr: Int,
+  /**
+   * The number of indicies to render. Should be
+   * divisible by 3 to form triangled.
+   */
   val count: Int,
+  /** TODO - Figure out materials. */
   val material: RawMaterial
 )
 
+/** Simplest version of a loaded mesh. */
 final class SimpleRenderableMesh(
+    /** The mesh that's been loaded. */
     override val original: BakedMesh,
+    /** The VAO holding the mesh. */
     vao: VertexArrayObject,
+    /** The groups within the mesh we need to render. */
     groups: Array[RenderableMeshGroup])
     extends RenderableMesh {
   def render(ctx: MeshRenderContext): Unit = {

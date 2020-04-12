@@ -104,6 +104,7 @@ def bake(parse: parser.ParsedObj): BakedMesh = {
           MeshTriangle(bakedIndexFor(a), bakedIndexFor(b), bakedIndexFor(c)),
           MeshTriangle(bakedIndexFor(c), bakedIndexFor(d), bakedIndexFor(a)))
     }
+  // Update all the groups to make uses of our new vertex+extra encoding of data.  
   val bakedGroups =
     for (group <- parse.groups) 
     yield MeshGroup(
@@ -146,67 +147,4 @@ def calculateCentroid(points: Array[MeshPoint], faces: Array[MeshTriangle]): Vec
     val y = sumAreaTimesFaceCentroidY / sumArea
     val z = sumAreaTimesFaceCentroidZ / sumArea
     Vec3(x, y, z)
-}
-
-
-// TODO - make this an enum
-sealed trait Face {
-  def vertices: Seq[FaceIndex]
-}
-/** Represents a triangle defined as an index-reference into a Mesh3d. */
-final case class TriangleFace(one: FaceIndex, two: FaceIndex, three: FaceIndex) extends Face {
-  override def vertices: Seq[FaceIndex] = Seq(one,two,three)
-}
-final case class QuadFace(one: FaceIndex, two: FaceIndex, three: FaceIndex, four: FaceIndex) extends Face {
-  override def vertices: Seq[FaceIndex] = Seq(one,two,three,four)
-}
-/** Index reference into a Mesh3d for a face-definition. */
-final case class FaceIndex(vertix: Int, texture: Int, normal: Int)
-
-
-/** 
- * A rendderable 3d Mesh. 
- * - This needs a LOT of cleanup.  We should not blindly take in OBJ format and use it, we should clean it before
- *   creating this data structure.
- */
-trait Mesh3d {
-    /** The verticies on this mesh. */
-    def vertices: Seq[Vec3[Float]]
-    /** The normals. */
-    def normals: Seq[Vec3[Float]]
-    /** Texture coordinates. */
-    def textureCoords: Seq[Vec2[Float]]
-
-    /** The faces for this mesh.  Generally an index-reference to the other members. */
-    def faces: Seq[Face]
-    /** A flattening of indicies to those of the vertex. */
-    private def allIndicies: Seq[FaceIndex] = faces.flatMap(_.vertices).distinct.toSeq
-    /** Expensive to compute mechanism of lining up shared vertex/normal/texel coordinates. */
-    private def points: Seq[MeshPoint] = {
-      for(faceIdx <- allIndicies) yield {
-          val vertex = vertices(faceIdx.vertix - 1)
-          val normal = 
-            if(faceIdx.normal == 0) Vec3(0.0f,0.0f,0.0f)
-            else normals(faceIdx.normal - 1)
-          val texture = 
-            if (faceIdx.texture == 0) Vec2(0f,0f)
-            else textureCoords(faceIdx.texture - 1)
-          MeshPoint(vertex,normal,texture)
-        }
-    }
-    // TODO - don't keep indicies in such a wierd format...
-    private def idxes: Seq[Int] = {
-      val indexMap = allIndicies.zipWithIndex.toMap
-      for {
-        face <- faces
-        v <- face.vertices
-        idx <- indexMap get v
-      } yield idx
-    }
-
-    // TODO - cache/store of which VAOs are loaded and ability to dynamically unload them?
-    /** Loads this mesh into a VAO that can be rendered. */
-    def load(using MemoryStack): LoadedMesh = {
-     LoadedMesh(this, VertexArrayObject.loadWithIndex(points, idxes), idxes.length);
-    }
 }
