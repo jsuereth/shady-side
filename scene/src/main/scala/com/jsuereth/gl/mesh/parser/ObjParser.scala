@@ -22,18 +22,43 @@ package parser
 import java.io.{File, InputStream}
 import math.{Vec2,Vec3, given _}
 
-/** The results of parsing an obj file. */
-class ObjParsedMesh(override val vertices: Seq[Vec3[Float]],
-                    override val normals: Seq[Vec3[Float]],
-                    override val textureCoords: Seq[Vec2[Float]],
-                    override val faces: Seq[Face]) extends Mesh3d {
-  override def toString: String = s"ObjFileMesh(faces=${faces.size})"
-}
+/** A mesh that has been parsed from an ObjFile. */
+final case class ParsedObj(
+  /** Vertices that have been parsed. */
+  vertices: Seq[Vec3[Float]],
+  /** All parsed Normals. */
+  normals: Seq[Vec3[Float]],
+  /** All parsed texture coordinates. */
+  textureCoords: Seq[Vec2[Float]],
+  /** All parsed obj groups (or one). */
+  groups: Seq[ParsedGroup],
+  /** All `mtllib` references to be loaded later. */
+  materialLibraryRefs: Seq[String]
+)
+
+/** A group that has been parsed from an ObjFile. */
+final case class ParsedGroup(
+  /** The name of this group. */
+  name: String,
+  /** The material (by name) to use when rendering this group. */
+  materialRef: Option[String],
+  /** The faces in this portion of the object. */
+  faces: Seq[Face])
+
+/** The result of parsing a `.obj` file. */
+final case class ParsedObjects(
+  /** Named objects found in this file and parsed. */
+  objects: Map[String, ParsedObj],
+  /** Material libraries that should be loaded from this file. */
+  materialLibRefs: Seq[String]
+)
+
 object ObjFileParser {
-  def parse(in: File): Map[String,Mesh3d] =
+  def parse(in: File): ParsedObjects =
     parse(java.io.FileInputStream(in))
-  def parse(in: InputStream): Map[String,Mesh3d] = {
+  def parse(in: InputStream): ParsedObjects = {
     val tmp = ObjFileParser()
+    // TODO - wrap in mesh?
     tmp.parse(in)
   }
 }
@@ -42,16 +67,17 @@ object ObjFileParser {
  */
 class ObjFileParser {
   private var currentObjectParser: Option[(String, ObjMeshParser)] = None
-  private var meshes = collection.mutable.Map[String, ObjParsedMesh]()
+  private var meshes = collection.mutable.Map[String, ParsedObj]()
+  private var materialLibRefs = collection.mutable.ArrayBuffer[String]()
 
-  def parse(in: File): Map[String,ObjParsedMesh] = {
+  def parse(in: File): ParsedObjects = {
     parse(java.io.FileInputStream(in))
   }
 
-  def parse(in: InputStream): Map[String,ObjParsedMesh] = {
+  def parse(in: InputStream): ParsedObjects = {
     try readStream(in)
     finally in.close()
-    meshes.toMap
+    ParsedObjects(meshes.toMap, materialLibRefs.toSeq)
   }
 
   private def readStream(in: java.io.InputStream): Unit = {
@@ -76,7 +102,7 @@ class ObjFileParser {
   private def readLine(line: String): Unit = 
     line match {
       case ObjLine("#", _) | "" => // Ignore comments.
-      case ObjLine("usemtl", mtl +: Nil) => System.err.println("Ignoring material: " + mtl) // TODO - figure out what to do w/ materials.
+      case ObjLine("usemtl", mtl +: Nil) => materialLibRefs.append(mtl)
       case ObjLine("o", name +: Nil) => 
         cleanSubParser()
         currentObjectParser = Some((name, ObjMeshParser()))
@@ -97,12 +123,16 @@ class ObjMeshParser() {
   private var normals = collection.mutable.ArrayBuffer.empty[Vec3[Float]]
   private var textureCoords = collection.mutable.ArrayBuffer.empty[Vec2[Float]]
   private var faces = collection.mutable.ArrayBuffer.empty[Face]
+  private var groups = collection.mutable.ArrayBuffer.empty[ParsedGroup]
+  private var currentMaterial: Option[String] = None
+  private var currentGroupName: Option[String] = None
   /** Read a line of input for a named object. */
   def readLine(line: String): Unit =
     line match {
-      case ObjLine("g", group +: Nil) => System.err.println(s"Ignoring group: $group")
       case ObjLine("s", config +: Nil) => System.err.println(s"Ignoring smooth shading config: $config")
-      case ObjLine("usemtl", mtl +: Nil) => System.err.println("Ignoring material: " + mtl)
+      case ObjLine("g", group +: Nil) => pushNextGroup(group)
+      // TODO - do we need to record a new object group here?
+      case ObjLine("usemtl", mtl +: Nil) => currentMaterial = Some(mtl)
       case ObjLine("v", P3f(x,y,z))  => vertices.append(Vec3(x, y, z))  // verticies
       case ObjLine("vt", P2f(u,v))   => textureCoords.append(Vec2(u,v)) // texture coords
       case ObjLine("vt", P3f(u,v,_))   => textureCoords.append(Vec2(u,v)) // ignore 3d texture coords
@@ -111,36 +141,66 @@ class ObjMeshParser() {
       // TODO - support polylines ("l")
       case msg => System.err.println(s"Could not read line in object: $msg") // TODO - better errors.
     }
-
-  def obj: ObjParsedMesh = {
-    // TODO - Clean up imported objects.
-    // Convert all quad faces into triangles
-    val fixedFaces: Seq[TriangleFace] = faces.flatMap {
+  /** Pushes the next group into state, and record the previous one... */
+  private def pushNextGroup(name: String): Unit = {
+    if (!faces.isEmpty) addGroupAndClearData()
+    currentGroupName = Some(name)
+  }
+  private def addGroupAndClearData(): Unit = if (!faces.isEmpty) {
+    val myFaces = makeTriangles(faces.iterator)
+    val result = ParsedGroup(
+      currentGroupName.getOrElse(s"group-${groups.length}"),
+      currentMaterial,
+      myFaces
+    )
+    groups.append(result)
+    currentGroupName = None
+    currentMaterial = None
+    faces = collection.mutable.ArrayBuffer.empty[Face]
+  }
+  /** unifies faces to all be triangles. */
+  private def makeTriangles(faces: Iterator[Face]): Seq[TriangleFace] =
+    faces.flatMap {
       case x: TriangleFace => Seq(x)
       case QuadFace(one,two,three,four) => Seq(TriangleFace(one,two,three), TriangleFace(three, four, one))
     }.toSeq
+
+  def obj: ParsedObj = {
+    addGroupAndClearData()
     // Generate normals if needed, update faces.
-    val faces2 = if (normals.isEmpty) generateNormals(fixedFaces) else fixedFaces
-    ObjParsedMesh(vertices.toSeq, normals.toSeq, textureCoords.toSeq, faces2.toSeq)
+    if (normals.isEmpty) generateNormals()
+    ParsedObj(
+      vertices = vertices.toSeq,
+      normals = normals.toSeq,
+      textureCoords = textureCoords.toSeq, 
+      groups = groups.toSeq, 
+      materialLibraryRefs = Seq())
   }
 
-  private def generateNormals(faces: Seq[TriangleFace]): Seq[TriangleFace] = {
+  // TODO - update this to use the groups...
+  private def generateNormalsForGroup(group: ParsedGroup): ParsedGroup = {
+    for (TriangleFace(one,two,three) <- group.faces) {
+          val A = vertices(one.vertix-1)
+          val B = vertices(two.vertix-1)
+          val C = vertices(three.vertix-1)
+          val p = (B-A).cross(C-A)
+          normals(one.vertix-1) += p
+          normals(two.vertix-1) += p
+          normals(three.vertix-1) += p
+        }
+    val newFaces =        
+      for {
+        TriangleFace(one,two,three) <- group.faces
+      } yield TriangleFace(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
+    group.copy(faces = newFaces.toSeq)
+  }
+
+  private def generateNormals(): Unit = {
     for (v <- vertices) normals += Vec3(0f,0f,0f)
-    for (TriangleFace(one,two,three) <- faces) {
-      val A = vertices(one.vertix-1)
-      val B = vertices(two.vertix-1)
-      val C = vertices(three.vertix-1)
-      val p = (B-A).cross(C-A)
-      normals(one.vertix-1) += p
-      normals(two.vertix-1) += p
-      normals(three.vertix-1) += p
-    }
+    groups.mapInPlace(generateNormalsForGroup)
     for (i <- 0 until normals.size) {
       normals(i) = normals(i).normalize
     }
-    for {
-      TriangleFace(one,two,three) <- faces
-    } yield TriangleFace(one.copy(normal=one.vertix), two.copy(normal=two.vertix), three.copy(normal=three.vertix))
   }
 }
 
