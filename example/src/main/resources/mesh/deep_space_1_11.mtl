@@ -11,7 +11,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd texture/DS1_tex_01.psd
+map_Kd texture/DS1_tex_01-0.png
 
 newmtl None
 Ns 0
@@ -92,4 +92,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd texture/DS1_tex_01.psd
+map_Kd texture/DS1_tex_01-0.png
