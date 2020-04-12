@@ -32,9 +32,7 @@ final case class ParsedObj(
   /** All parsed texture coordinates. */
   textureCoords: Seq[Vec2[Float]],
   /** All parsed obj groups (or one). */
-  groups: Seq[ParsedGroup],
-  /** All `mtllib` references to be loaded later. */
-  materialLibraryRefs: Seq[String]
+  groups: Seq[ParsedGroup]
 )
 
 /** A group that has been parsed from an ObjFile. */
@@ -115,7 +113,7 @@ class ObjFileParser {
   private def readLine(line: String): Unit = 
     line match {
       case ObjLine("#", _) | "" => // Ignore comments.
-      case ObjLine("usemtl", mtl +: Nil) => materialLibRefs.append(mtl)
+      case ObjLine("mtllib", mtl +: Nil) => materialLibRefs.append(mtl)
       case ObjLine("o", name +: Nil) => 
         cleanSubParser()
         currentObjectParser = Some((name, ObjMeshParser()))
@@ -170,7 +168,7 @@ class ObjMeshParser() {
     )
     groups.append(result)
     currentGroupName = None
-    currentMaterial = None
+    //currentMaterial = None
     faces = collection.mutable.ArrayBuffer.empty[ParsedFace]
   }
   /** unifies faces to all be triangles. */
@@ -188,8 +186,7 @@ class ObjMeshParser() {
       vertices = vertices.toSeq,
       normals = normals.toSeq,
       textureCoords = textureCoords.toSeq, 
-      groups = groups.toSeq, 
-      materialLibraryRefs = Seq())
+      groups = groups.toSeq)
   }
 
   // TODO - update this to use the groups...

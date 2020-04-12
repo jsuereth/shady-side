@@ -47,7 +47,7 @@ case class MeshGroup(
   material: RawMaterial
 ) {
   override def toString(): String =
-    s"MeshGroup(faceCount=${faces.length})"
+    s"MeshGroup(faceCount=${faces.length}, material: ${material.name})"
 }
 
 /** 
@@ -65,53 +65,6 @@ case class BakedMesh(
 ) {
   override def toString(): String =
     s"BakedMesh(pointCount=${points.length}, ${groups.mkString(", ")})"
-}
-
-val noMaterial =
-  RawMaterial("none", BaseMaterial(), MaterialTextures())
-
-/** This converts the raw OBJ file parse into something we can render. */
-def bake(parse: parser.ParsedObj): BakedMesh = {
-  val bakedPoints = collection.mutable.ArrayBuffer.empty[MeshPoint]
-  // A cache of where we've put indicies as we use them.
-  val indexCache = collection.mutable.Map.empty[parser.ParsedFaceIndex, Int]
-  def emptyPoint = MeshPoint(Vec3(0f,0f,0f), Vec3(0f,0f,0f),  Vec2(0f,0f))
-  def bakedPointFor(parseIndex: parser.ParsedFaceIndex): MeshPoint = {
-    import parse.{vertices, normals, textureCoords}
-    val vertex = vertices(parseIndex.vertix - 1)
-    val normal = 
-      if(parseIndex.normal == 0) Vec3(0.0f,0.0f,0.0f)
-      else normals(parseIndex.normal - 1)
-    val texture = 
-      if (parseIndex.texture == 0) Vec2(0f,0f)
-      else textureCoords(parseIndex.texture - 1)
-    MeshPoint(vertex,normal,texture)
-  }
-  def bakedIndexFor(parseIndex: parser.ParsedFaceIndex): Int =
-    indexCache.get(parseIndex).getOrElse {
-      val idx = bakedPoints.size
-      bakedPoints += bakedPointFor(parseIndex)
-      indexCache.put(parseIndex, idx)
-      idx
-    }
-  // We translate all faces to triangles.
-  def bakeFace(parsed: parser.ParsedFace): Seq[MeshTriangle] =
-    parsed match {
-      case parser.ParsedFace.Triangle(a,b,c) =>
-        Seq(MeshTriangle(bakedIndexFor(a), bakedIndexFor(b), bakedIndexFor(c)))
-      case parser.ParsedFace.Quad(a,b,c,d) =>
-        Seq(
-          MeshTriangle(bakedIndexFor(a), bakedIndexFor(b), bakedIndexFor(c)),
-          MeshTriangle(bakedIndexFor(c), bakedIndexFor(d), bakedIndexFor(a)))
-    }
-  // Update all the groups to make uses of our new vertex+extra encoding of data.  
-  val bakedGroups =
-    for (group <- parse.groups) 
-    yield MeshGroup(
-      group.faces.flatMap(bakeFace).toArray,
-      // TODO - bake materials
-      noMaterial)
-  BakedMesh(bakedPoints.toArray, bakedGroups.toArray)
 }
 
 // Helper for calculateCentroid.

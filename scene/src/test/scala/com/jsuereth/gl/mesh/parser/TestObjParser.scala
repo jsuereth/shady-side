@@ -12,8 +12,8 @@ class TestObjParser {
 
     @Test def parseMaterialLibRefs(): Unit = {
         val parse = ObjFileParser.parse(stream("""|
-        |usemtl somelib.mtl 
-        |usemtl otherlib.mtl
+        |mtllib somelib.mtl 
+        |mtllib otherlib.mtl
         |o test
         |v 1.0 0.0 1.0
         |v 0.0 0.0 0.0

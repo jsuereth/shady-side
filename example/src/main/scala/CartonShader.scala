@@ -27,8 +27,8 @@ object CartoonShader extends DslShaderProgram {
   val world = Uniform[WorldData]()
   val modelMatrix = Uniform[Matrix4[Float]]()
   val materialShininess = Uniform[Float]()
-  val materialKd = Uniform[Float]()
-  val materialKs = Uniform[Float]()
+  val materialKd = Uniform[Vec3[Float]]()
+  val materialKs = Uniform[Vec3[Float]]()
   // Textures in lighting model.
   val materialKdTexture = Uniform[Texture2D]()
 
@@ -52,7 +52,7 @@ object CartoonShader extends DslShaderProgram {
       val diffuse = materialKd() * lambertian
       val specular =
         if (lambertian > 0.0f) materialKs() * Math.pow(Math.max(0, H.dot(N)).toFloat, materialShininess()).toFloat
-        else 0.0f
+        else Vec3(0f,0f,0f)
       //Black color if dot product is smaller than 0.3
       //else keep the same colors
       val edgeDetection = if (V.dot(worldNormal) > 0.3f) 1f else 0.7f

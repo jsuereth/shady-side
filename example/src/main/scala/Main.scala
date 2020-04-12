@@ -47,6 +47,8 @@ object Main {
     var window: Long = 0
     var scene: Scene = null
 
+    val meshLoader = MeshLoader(ClassloaderResourceLookup(this.getClass.getClassLoader))
+
 
     def run(): Unit = {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -153,12 +155,12 @@ object Main {
 
 
         // Load models and shader.
-        val models = ObjFileParser.parse(getClass.getClassLoader.getResourceAsStream("mesh/deep_space_1_11.obj"))
+        val models = meshLoader.loadObjects("mesh/deep_space_1_11.obj")
         System.out.println("Done loading models!")
-        for ((name, mesh) <- models.objects) {
-            System.err.println(s" - Loaded model [$name] w/ ${mesh.vertices.size} vertices, ${mesh.normals.size} normals, ${mesh.textureCoords.size} texcoords, ${mesh.groups}")
+        for ((name, mesh) <- models) {
+            System.err.println(s" - Loaded model [$name]: $mesh")
         }
-        val mesh = bake(models.objects.iterator.next._2)
+        val mesh = models.iterator.next._2
           
         val uglyTexture = Texture.loadImage(getClass.getClassLoader.getResourceAsStream("mesh/texture/foil_silver_ramp.png"))
         
@@ -186,9 +188,9 @@ object Main {
         def meshRenderCtx(using ShaderLoadingEnvironment): MeshRenderContext =
             new MeshRenderContext {
                 def applyMaterial(material: RawMaterial): Unit = {
-                    CartoonShader.materialShininess := 1.3f
-                    CartoonShader.materialKd := 0.5f
-                    CartoonShader.materialKs := 0.4f
+                    CartoonShader.materialShininess := material.base.ns
+                    CartoonShader.materialKd := material.base.kd
+                    CartoonShader.materialKs := material.base.ks
                 }
             }
 
