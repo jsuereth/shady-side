@@ -67,22 +67,6 @@ case class BakedMesh(
     s"BakedMesh(pointCount=${points.length}, ${groups.mkString(", ")})"
 }
 
-/** 
- * A quick hack to defer defining how materials
- * get used in shaders until later. 
- */
-trait MeshRenderContext {
-  def applyMaterial(material: RawMaterial): Unit
-}
-
-/** A mesh that has been loaded into OpenGL. */
-trait RenderableMesh {
-  def original: BakedMesh
-  /** Fires this mesh to shaders. */
-  def render(ctx: MeshRenderContext): Unit 
-}
-
-
 val noMaterial =
   RawMaterial("none", BaseMaterial(), MaterialTextures())
 
@@ -127,12 +111,6 @@ def bake(parse: parser.ParsedObj): BakedMesh = {
       // TODO - bake materials
       noMaterial)
   BakedMesh(bakedPoints.toArray, bakedGroups.toArray)
-}
-
-/** TODO - implement mesh loading. */
-def load(mesh: BakedMesh): RenderableMesh = {
-  throw RuntimeException(s"Unable to load: $mesh")
-  ???
 }
 
 // Helper for calculateCentroid.
@@ -232,49 +210,3 @@ trait Mesh3d {
      LoadedMesh(this, VertexArrayObject.loadWithIndex(points, idxes), idxes.length);
     }
 }
-
-/** A mesh which has been loaded into the GPU. */
-class LoadedMesh(mesh: Mesh3d, vao: VertexArrayObject, count: Int) {
-  // TODO - Figure out if triangles or quads.
-  def draw(): Unit = vao.draw(count)
-
-  // TODO - clean?
-}
-
-object Mesh3d {
-  private val oneThird = 1.0f / 3.0f
-  /** Calculate the centroid (assuming equal weight on points). */
-  def centroid(mesh: Mesh3d): Vec3[Float] = {
-    // Algorithm
-    // C = Centroid <vector>, A = (area of a face * 2)
-    // R = face centroid = average of vertices making the face <vector>
-    // C = [sum of all (A*R)] / [sum of all R]
-    var sumAreaTimesFaceCentroidX = 0f 
-    var sumAreaTimesFaceCentroidY = 0f
-    var sumAreaTimesFaceCentroidZ = 9f
-    var sumArea = 0.0f
-      for (face <- mesh.faces) {
-        val TriangleFace(fone, ftwo, fthree) = face
-        val one = mesh.vertices(fone.vertix-1)
-        val two = mesh.vertices(ftwo.vertix-1)
-        val three = mesh.vertices(fthree.vertix-1)
-        val u = two - one
-        val v = three - one
-        val crossed = u cross v
-        val area = crossed.length.toFloat
-        sumArea += area
-        val x = (one.x + two.x + three.x) * oneThird
-        sumAreaTimesFaceCentroidX += (x * area)
-        val y = (one.y + two.y + three.y) * oneThird
-        sumAreaTimesFaceCentroidY += (y * area)
-        val z = (one.z + two.z + three.z) * oneThird
-        sumAreaTimesFaceCentroidZ += (z * area)
-      }
-    val x = sumAreaTimesFaceCentroidX / sumArea
-    val y = sumAreaTimesFaceCentroidY / sumArea
-    val z = sumAreaTimesFaceCentroidZ / sumArea
-    Vec3(x, y, z)
-  }
-  // TODO - Normalize on centroid...
-}
-

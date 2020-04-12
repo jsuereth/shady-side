@@ -96,10 +96,10 @@ final class VertexArrayObject(id: Int) extends GpuObject {
     * - Always binds the VAO prior to a `glDraw*` call
     * - Always unbinds
     */
-  def draw(count: Int, drawMode: Int = GL_TRIANGLES): Unit = {
+  def draw(start: Int, count: Int, drawMode: Int = GL_TRIANGLES): Unit = {
     bind()
     attached.foreach(_.bindAttributes())
-    if(renderWithIndices)  glDrawElements(drawMode, count, GL_UNSIGNED_INT, 0)
+    if(renderWithIndices)  glDrawElements(drawMode, count, GL_UNSIGNED_INT, start)
     else glDrawArrays(drawMode, 0, count)
     unbind()
   }
