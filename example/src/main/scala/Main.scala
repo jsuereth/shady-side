@@ -75,9 +75,9 @@ object Main {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
         System.out.println("Example shaders")
         System.out.println("--- Vertex Shader ---")
-        System.out.println(CartoonShader.vertexShaderCode)
+        System.out.println(SimpleLightShader.vertexShaderCode)
         System.out.println("--- Fragment Shader ---")
-        System.out.println(CartoonShader.fragmentShaderCode)
+        System.out.println(SimpleLightShader.fragmentShaderCode)
         System.out.println("---  ---")
         try {
             init()
@@ -194,14 +194,14 @@ object Main {
         val projectionMatrix = 
           Matrix4.perspective(45f, WIDTH.toFloat/HEIGHT.toFloat, 1f, 200f) 
         val loadedMesh = withMemoryStack(load(mesh))
-        CartoonShader.load()
+        SimpleLightShader.load()
 
         System.out.println("-- Shader struct debug --")
-        System.out.println(s" world: ${CartoonShader.debugUniform("world")}")
-        System.out.println(s" world.light: ${CartoonShader.debugUniform("world.light")}")
-        System.out.println(s" world.eye: ${CartoonShader.debugUniform("world.eye")}")
-        System.out.println(s" world.view: ${CartoonShader.debugUniform("world.view")}")
-        System.out.println(s" world.projection: ${CartoonShader.debugUniform("world.projection")}")
+        System.out.println(s" world: ${SimpleLightShader.debugUniform("world")}")
+        System.out.println(s" world.light: ${SimpleLightShader.debugUniform("world.light")}")
+        System.out.println(s" world.eye: ${SimpleLightShader.debugUniform("world.eye")}")
+        System.out.println(s" world.view: ${SimpleLightShader.debugUniform("world.view")}")
+        System.out.println(s" world.projection: ${SimpleLightShader.debugUniform("world.projection")}")
 
 
         def meshRenderCtx(using ShaderLoadingEnvironment): MeshRenderContext =
@@ -210,12 +210,12 @@ object Main {
                 def applyMaterial(material: RawMaterial): Unit = {
                     summon[ShaderLoadingEnvironment].pop()
                     summon[ShaderLoadingEnvironment].push()
-                    CartoonShader.materialShininess := material.base.ns
-                    CartoonShader.materialKd := material.base.kd
-                    CartoonShader.materialKs := material.base.ks
+                    SimpleLightShader.materialShininess := material.base.ns
+                    SimpleLightShader.materialKd := material.base.kd
+                    SimpleLightShader.materialKs := material.base.ks
                     material.textures.kd match {
                         case Some(ref) =>
-                             CartoonShader.materialKdTexture := 
+                             SimpleLightShader.materialKdTexture := 
                                 TextureManager.get(ref.filename)
                         case None => ()
                     }
@@ -230,21 +230,21 @@ object Main {
             glCullFace(GL_BACK)
             glEnable(GL_TEXTURE)
             glEnable(GL_TEXTURE_2D)
-            CartoonShader.bind()
+            SimpleLightShader.bind()
             withMemoryStack {
                 given env as ShaderLoadingEnvironment {
                     val stack = summon[MemoryStack]
                     val textures = ActiveTextures()
                 }
                 env.push()
-                CartoonShader.world := WorldData(light = scene.lights.next,
-                                                 eye = scene.camera.eyePosition,
-                                                 view = scene.camera.viewMatrix,
-                                                 projection = projectionMatrix)
+                SimpleLightShader.world := WorldData(light = scene.lights.next,
+                                                     eye = scene.camera.eyePosition,
+                                                     view = scene.camera.viewMatrix,
+                                                     projection = projectionMatrix)
                 val ctx = meshRenderCtx
                 for (o <- scene.objectsInRenderOrder) {
                     env.push()
-                    CartoonShader.modelMatrix := o.modelMatrix
+                    SimpleLightShader.modelMatrix := o.modelMatrix
                     // TODO - pull the VAO for the model.
                     loadedMesh.render(ctx)
                     env.pop()

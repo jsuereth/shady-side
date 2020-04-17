@@ -22,7 +22,9 @@ import org.lwjgl.opengl.{
 }
 import com.jsuereth.gl.io.{
   ShaderUniformLoadable,
-  ShaderLoadingEnvironment
+  ShaderLoadingEnvironment,
+  UniformLocation,
+  shapeToLocation
 }
 import org.lwjgl.system.MemoryStack
 
@@ -73,10 +75,6 @@ def linkShaders(compiledShaders: Int*): Int = {
     }
     program
 }
-/** looks up the "location" to a uniform in a shader program. */
-def lookupUniform(program: Int, name: String): Int =
-  GL20.glGetUniformLocation(program, name)
-
 
 abstract class BasicShaderProgram {
     /** Returns the vertex shader for this program. */
@@ -108,20 +106,20 @@ abstract class BasicShaderProgram {
 
    /** Our version of uniform which binds to the shader being compiled by this program. */
    protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
-     var location: Int = 0
+     var location: Option[UniformLocation] = None
      // TODO - does this need to be threadsafe?
      def :=(value: T)(using ShaderLoadingEnvironment): Unit = {
-       if (location == 0) {
-         location = GL20.glGetUniformLocation(programId, name)
+       if (location.isEmpty) {         
+         location = Some(
+           shapeToLocation(programId, name,
+                           summon[ShaderUniformLoadable[T]].shape))
        }
-       summon[ShaderUniformLoadable[T]].loadUniform(location, value)
+       summon[ShaderUniformLoadable[T]].loadUniform(location.get, value)
      }
      
    }
 
-    def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = {
-      MyUniform[T](name)
-    }
+    def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = MyUniform[T](name)
 
     // Temporary for debugging purposes only.
     def debugUniform(name: String): Int = GL20.glGetUniformLocation(programId, name)

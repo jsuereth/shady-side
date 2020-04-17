@@ -51,8 +51,8 @@ uniform Material material;
 void main() {
   color = vec4((material).color,1.0);
 }""", ExampleStructShader.fragmentShaderCode)
-    // We should find the first value of the structure here,
-    // since we do offset-based loading.
-    assertEquals("material.kd", ExampleStructShader.material.name)
+    // We should find the first value of the structure here.
+    // TODO - figure out how to test parrtial structure usage.
+    assertEquals("material", ExampleStructShader.material.name)
   }
 }

@@ -51,14 +51,6 @@ object DslShaderProgram {
       }
     }
     inline def valName: String = ${valNameImpl}
-    def valNameOrFirstStructNameImpl[T](using ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
-      import ctx.tasty._
-      val helpers = codegen.Convertors[ctx.tasty.type](ctx.tasty)
-      if (helpers.isStructType(tpe.unseal.tpe)) { 
-        '{${valNameImpl} + "." + ${Expr(helpers.firstStructMemberName(tpe.unseal.tpe).get)}} 
-      } else valNameImpl
-    }
-    inline def valOrStructName[T]: String = ${valNameOrFirstStructNameImpl[T]}
 
     def testStructDefImpl[T](using ctx: QuoteContext, tpe: Type[T]): Expr[String] = {
       import ctx.tasty._
@@ -71,10 +63,15 @@ abstract class DslShaderProgram extends BasicShaderProgram {
 
   // TODO - we'd also like to implicit-match either ShaderUniformLoadable *or* OpaqueGlslType.
   inline def Uniform[T : ShaderUniformLoadable](): Uniform[T] =
-    MyUniform[T](DslShaderProgram.valOrStructName[T])
+    MyUniform[T](DslShaderProgram.valName)
 
   // API for defining shaders...
 
+  // TODO - We want this to take an *input type* which is one of:
+  // - a VAO-able type (e.g. MeshPoint in our scene/example libs)
+  // - a Texture we're re-rendering with post-processing
+  // - a Union of allowable types
+  // - other?
   inline def defineShaders[T](inline f: => T): (String, String) = ${DslShaderProgram.defineShadersImpl('f)}
   inline def fragmentShader[T](inline f: => T): Unit = f
 
