@@ -57,6 +57,9 @@ val javaMathOperations = Set("max", "min", "pow")
 // Operations we've built into our math library that can be translated into GLSL.
 val ourMathOperations = Set("max", "min", "pow")
 
+// Instance methods that turn into global methods in GLSL.
+val matrixOperations = Set("inverse", "transpose")
+
 trait StmtConvertorEnv {
     def recordUniform(name: String, tpe: String): Unit
     def recordOutput(name: String, tpe: String, location: Int): Unit
@@ -267,7 +270,7 @@ class Convertors[R <: tasty.Reflection](val r: R)(using QuoteContext) {
             // Handle java.lang.Math methods (todo - figure a better way to handle all built-in methods)
             case Apply(Select(ref, mthd), List(lhs,rhs)) if ref.symbol.fullName == "java.lang.Math" && javaMathOperations(mthd) =>
               Some((mthd, List(lhs, rhs)))
-            // TODO - lookup for all normalize methods...
+            // TODO - lookup for all methods...
             case Apply(term @ Select(ref, "normalize"), List(_,_)) if term.symbol.fullName == "com.jsuereth.gl.math.Vec3.normalize" => 
               Some(("normalize", List(ref)))
             // Handle dot products on vectors
@@ -280,6 +283,13 @@ class Convertors[R <: tasty.Reflection](val r: R)(using QuoteContext) {
             // Handle our built-int math operations.  TODO - lock this down to NOT be so flexible...
             case Apply(Apply(TypeApply(Ident(mathOp), _), args), /* Implicit witnesses */_) if ourMathOperations(mathOp) =>
               Some((mathOp, args))
+            // Handle instance methods for inverse/transpose.
+            // First, methods that have implicit args.
+            case Apply(term @ Select(ref, op), _) if matrixOperations(op) && term.symbol.fullName.contains("Matrix") => 
+              Some((op, List(ref)))
+            // Next methods with no args.
+            case term @ Select(ref, op) if matrixOperations(op) && term.symbol.fullName.contains("Matrix") =>
+              Some((op, List(ref)))
             case _ => None
         }
     }
@@ -302,14 +312,13 @@ class Convertors[R <: tasty.Reflection](val r: R)(using QuoteContext) {
           env.recordUniform(name, st.name)
           Expr.Id(name)
         case SafeAutoCast(arg) => convertExpr(arg)
+        case BuiltinFunction(name, args) => Expr.MethodCall(name, args.map(convertExpr))
         case Operator(name, lhs, rhs) => Expr.Operator(name, convertExpr(lhs), convertExpr(rhs))
         case Constructor(name, args) => Expr.MethodCall(name, args.map(convertExpr))
-        case BuiltinFunction(name, args) => Expr.MethodCall(name, args.map(convertExpr))
         case Ident(localRef) => Expr.Id(localRef)
         case If(cond, lhs, rhs) => Expr.Terenary(convertExpr(cond), convertExpr(lhs), convertExpr(rhs))
         // Erased methods...
         case Select(expr, "toFloat") => convertExpr(expr)
-        case SafeAutoCast(arg) => convertExpr(arg)
         case Select(term, mthd) => Expr.Select(convertExpr(term), mthd)
         // TODO - actual encode literals in AST?
         case Literal(constant) => Expr.Id(constantToString(constant))
