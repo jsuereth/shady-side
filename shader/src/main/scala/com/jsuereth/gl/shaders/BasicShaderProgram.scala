@@ -77,50 +77,50 @@ def linkShaders(compiledShaders: Int*): Int = {
 }
 
 abstract class BasicShaderProgram {
-    /** Returns the vertex shader for this program. */
-    def vertexShaderCode: String
-    /** Returns the fragment shader for this program. */
-    def fragmentShaderCode: String
+  /** Returns the vertex shader for this program. */
+  def vertexShaderCode: String
+  /** Returns the fragment shader for this program. */
+  def fragmentShaderCode: String
 
-    private var programId: Int = 0
-    /** Loas the configured shader into the graphics card. */
-    def load() : Unit = {
-      unload()  
-      // TODO - remember shader ids for unloading?
-      programId = linkShaders(compileShader(Shader.Vertex, vertexShaderCode),
-                              compileShader(Shader.Fragment, fragmentShaderCode))
+  private var programId: Int = 0
+  /** Loas the configured shader into the graphics card. */
+  def load() : Unit = {
+    unload()  
+    // TODO - remember shader ids for unloading?
+    programId = linkShaders(compileShader(Shader.Vertex, vertexShaderCode),
+                            compileShader(Shader.Fragment, fragmentShaderCode))
+  }
+  /** Removes this shader from OpenGL/Graphics card memory. */
+  def unload(): Unit = if (programId != 0) {
+      // TODO - unlink shaders?
+      // GL20.glDetachShader(program, shader)
+      // GL20.glDeleteShader(shader)
+      GL20.glDeleteProgram(programId)
+      programId = 0
+  }
+  /** Configures the OpenGL pipeline to use this program. */
+  def bind(): Unit = GL20.glUseProgram(programId)
+  /** Configures OpenGL pipeline to not use any shader. */
+  def unbind(): Unit = GL20.glUseProgram(0)
+
+
+  /** Our version of uniform which binds to the shader being compiled by this program. */
+  protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
+    var location: Option[UniformLocation] = None
+    // TODO - does this need to be threadsafe?
+    // TODO - We want to do a better job avoiding loading things already loaded.
+    def :=(value: T)(using ShaderLoadingEnvironment): Unit = {
+      if (location.isEmpty) {         
+        location = Some(
+          shapeToLocation(programId, name,
+                          summon[ShaderUniformLoadable[T]].shape))
+      }
+      summon[ShaderUniformLoadable[T]].loadUniform(location.get, value)
     }
-    /** Removes this shader from OpenGL/Graphics card memory. */
-    def unload(): Unit = if (programId != 0) {
-        // TODO - unlink shaders?
-        // GL20.glDetachShader(program, shader)
-        // GL20.glDeleteShader(shader)
-        GL20.glDeleteProgram(programId)
-        programId = 0
-    }
-    /** Configures the OpenGL pipeline to use this program. */
-    def bind(): Unit = GL20.glUseProgram(programId)
-    /** Configures OpenGL pipeline to not use any shader. */
-    def unbind(): Unit = GL20.glUseProgram(0)
+  }
 
+  def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = MyUniform[T](name)
 
-   /** Our version of uniform which binds to the shader being compiled by this program. */
-   protected class MyUniform[T : ShaderUniformLoadable](override val name: String) extends Uniform[T] {
-     var location: Option[UniformLocation] = None
-     // TODO - does this need to be threadsafe?
-     def :=(value: T)(using ShaderLoadingEnvironment): Unit = {
-       if (location.isEmpty) {         
-         location = Some(
-           shapeToLocation(programId, name,
-                           summon[ShaderUniformLoadable[T]].shape))
-       }
-       summon[ShaderUniformLoadable[T]].loadUniform(location.get, value)
-     }
-     
-   }
-
-    def makeUniform[T : ShaderUniformLoadable](name: String): Uniform[T] = MyUniform[T](name)
-
-    // Temporary for debugging purposes only.
-    def debugUniform(name: String): Int = GL20.glGetUniformLocation(programId, name)
+  // Temporary for debugging purposes only.
+  def debugUniform(name: String): Int = GL20.glGetUniformLocation(programId, name)
 }

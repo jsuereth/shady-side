@@ -64,7 +64,7 @@ def load(mesh: BakedMesh)(using MemoryStack): RenderableMesh = {
   }  
   SimpleRenderableMesh(
     original = mesh, 
-    vao = VertexArrayObject.loadWithIndex(mesh.points, rawIndicies.toSeq), 
+    vao = VertexArrayObject.loadWithIndex(mesh.points.toSeq, rawIndicies.toSeq), 
     groups = groups.toArray)
 }
 
