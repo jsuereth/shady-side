@@ -64,6 +64,16 @@ final class Vec3[T : ClassTag](private[this] val values: Array[T]) {
   def normalize(using Fractional[T], Rootable[T]): Vec3[T] =
     new Vec3[T](Array((x / length), (y / length), (z / length)))
 
+  
+  /** 
+   * Calculates the reflection direction.
+   *
+   * This is the incidient vector.
+   * @param normal  The normal to reflect across.
+   * @return The reflected vector. 
+   */
+  def reflect(normal: Vec3[T])(using Numeric[T]): Vec3[T] =
+    this - (normal * (two * normal.dot(this)))
 
   // GLSL compat
   def xy: Vec2[T] = new Vec2[T](values)

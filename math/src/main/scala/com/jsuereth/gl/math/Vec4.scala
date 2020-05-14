@@ -42,6 +42,16 @@ final class Vec4[T : ClassTag](private[this] val values: Array[T]) {
     (x*other.x) + (y*other.y) + (z*other.z) + (w*other.w)
   // TODO: cross
 
+  /** 
+   * Calculates the reflection direction.
+   *
+   * This is the incidient vector.
+   * @param normal  The normal to reflect across.
+   * @return The reflected vector. 
+   */
+  def reflect(normal: Vec4[T])(using Numeric[T]): Vec4[T] =
+    this - (normal * (two * normal.dot(this)))
+
   /** the square of the length of this vector. */
   def lengthSquared(using Numeric[T]): T = this dot this
   /** Returns the length of this vector.  Requires a SQRT function. */

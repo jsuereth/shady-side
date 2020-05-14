@@ -277,6 +277,8 @@ class Convertors[R <: tasty.Reflection](val r: R)(using QuoteContext) {
             // TODO - check the symbol of the method.
             case Apply(Apply(mthd @ Select(lhs, "dot"), List(rhs)), _) => 
               Some(("dot", List(lhs,rhs)))
+            case Apply(Apply(mthd @ Select(lhs, "reflect"), List(rhs)), _) => 
+              Some(("reflect", List(lhs,rhs)))
             // Handle Sampler2D methods  
             case  Erased(Apply(Apply(Ident("texture"), List(ref)), List(arg))) if ref.tpe <:< typeOf[Texture2D] =>
               Some("texture", List(ref, arg))
